@@ -1,85 +1,73 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShieldAlert, Layers } from "lucide-react";
+import { ShieldAlert, Layers, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { FiltersBar, type RiskFilter } from "@/components/dashboard/FiltersBar";
+import { AnalyticsCard } from "@/components/common/AnalyticsCard";
 import { LoadingState } from "@/components/dashboard/LoadingState";
 import { RiskDistributionChart } from "@/components/dashboard/RiskDistributionChart";
-import { AnalyticsCard } from "@/components/common/AnalyticsCard";
-import { TenderTable } from "@/components/dashboard/TenderTable";
-import { TopRiskyOrgsChart } from "@/components/dashboard/TopRiskyOrgsChart";
-import { getTenders } from "@/lib/api";
-import type { Tender } from "@/types/tender";
+import { RiskBadge } from "@/components/dashboard/RiskBadge";
+import { getCompanies, getSuspicionStats } from "@/lib/api";
+import type { CompanySummary, RiskLevel, SuspicionStats } from "@/types/tender";
+
+type SuspicionFilter = "ALL" | RiskLevel;
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [tenders, setTenders] = useState<Tender[]>([]);
+  const [companies, setCompanies] = useState<CompanySummary[]>([]);
+  const [stats, setStats] = useState<SuspicionStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [search, setSearch] = useState("");
-  const [riskFilter, setRiskFilter] = useState<RiskFilter>("ALL");
-  const [organization, setOrganization] = useState("ALL");
+  const [levelFilter, setLevelFilter] = useState<SuspicionFilter>("ALL");
 
-  const highRiskAlerted = useRef(false);
+  const highAlerted = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    getTenders()
-      .then((data) => {
+    Promise.all([getCompanies(), getSuspicionStats()])
+      .then(([companyList, dashboardStats]) => {
         if (cancelled) return;
-        setTenders(data);
-        // 🚨 High risk tender alert (admin notification) — fire once per session.
-        if (!highRiskAlerted.current) {
-          const highCount = data.filter((t) => t.riskLevel === "HIGH").length;
-          if (highCount > 0) {
-            toast.error(`🚨 ${highCount} high risk tender${highCount === 1 ? "" : "s"} detected`, {
-              description: "Review flagged procurement activity in the dashboard below.",
-              duration: 6000,
-            });
-          }
-          highRiskAlerted.current = true;
+        setCompanies(companyList);
+        setStats(dashboardStats);
+
+        if (!highAlerted.current && dashboardStats.high > 0) {
+          toast.error(`${dashboardStats.high} high suspicion compan${dashboardStats.high === 1 ? "y" : "ies"} detected`, {
+            description: "Review company suspicion details in the dashboard below.",
+            duration: 6000,
+          });
+          highAlerted.current = true;
         }
       })
       .catch((e) => {
-        if (!cancelled) setError(e?.message ?? "Failed to load tenders");
+        if (!cancelled) setError(e?.message ?? "Failed to load dashboard");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const organizations = useMemo(
-    () => Array.from(new Set(tenders.map((t) => t.organization))).sort(),
-    [tenders],
-  );
-
   const filtered = useMemo(() => {
-    return tenders.filter((t) => {
-      if (riskFilter !== "ALL" && t.riskLevel !== riskFilter) return false;
-      if (organization !== "ALL" && t.organization !== organization) return false;
-      if (search.trim() && !t.title.toLowerCase().includes(search.trim().toLowerCase())) return false;
-      return true;
+    const query = search.trim().toLowerCase();
+    return companies.filter((company) => {
+      if (levelFilter !== "ALL" && company.suspicionLevel !== levelFilter) return false;
+      if (!query) return true;
+      return company.name.toLowerCase().includes(query);
     });
-  }, [tenders, riskFilter, organization, search]);
+  }, [companies, levelFilter, search]);
 
-  const stats = useMemo(() => {
-    const total = tenders.length;
-    const high = tenders.filter((t) => t.riskLevel === "HIGH").length;
-    const medium = tenders.filter((t) => t.riskLevel === "MEDIUM").length;
-    const low = tenders.filter((t) => t.riskLevel === "LOW").length;
-    return { total, high, medium, low };
-  }, [tenders]);
-
-  const hasFilters = search !== "" || riskFilter !== "ALL" || organization !== "ALL";
-  const clearFilters = () => {
-    setSearch("");
-    setRiskFilter("ALL");
-    setOrganization("ALL");
+  const effectiveStats = stats ?? {
+    total: companies.length,
+    high: companies.filter((company) => company.suspicionLevel === "HIGH").length,
+    medium: companies.filter((company) => company.suspicionLevel === "MEDIUM").length,
+    low: companies.filter((company) => company.suspicionLevel === "LOW").length,
+    distribution: { HIGH: 0, MEDIUM: 0, LOW: 0 },
+    topSuspiciousCompanies: [],
+    totalAnalyzedCompanies: companies.length,
   };
 
   return (
@@ -90,81 +78,140 @@ export default function AdminDashboard() {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Procurement Risk Dashboard
+            Company Suspicion Dashboard
           </h1>
           <p className="text-sm text-muted-foreground">
-            Monitor public tenders, surface anomalies, and investigate high-risk activity.
+            Monitor suspicious companies, review backend analysis, and investigate repeated abuse patterns.
           </p>
         </div>
       </div>
 
-      {/* Analytics summary */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up">
-        <AnalyticsCard
-          label="Total tenders"
-          value={stats.total}
-          icon={Layers}
-          hint="Currently monitored"
-        />
-        <AnalyticsCard
-          label="High risk"
-          value={stats.high}
-          emoji="🔴"
-          hint={`${stats.total ? Math.round((stats.high / stats.total) * 100) : 0}% of total`}
-          accent="high"
-        />
-        <AnalyticsCard
-          label="Medium risk"
-          value={stats.medium}
-          emoji="🟡"
-          hint={`${stats.total ? Math.round((stats.medium / stats.total) * 100) : 0}% of total`}
-          accent="medium"
-        />
-        <AnalyticsCard
-          label="Low risk"
-          value={stats.low}
-          emoji="🟢"
-          hint={`${stats.total ? Math.round((stats.low / stats.total) * 100) : 0}% of total`}
-          accent="low"
-        />
+        <AnalyticsCard label="Total companies" value={effectiveStats.total} icon={Layers} hint="Tracked by backend" />
+        <AnalyticsCard label="High suspicion" value={effectiveStats.high} emoji="🔴" accent="high" />
+        <AnalyticsCard label="Medium suspicion" value={effectiveStats.medium} emoji="🟡" accent="medium" />
+        <AnalyticsCard label="Low suspicion" value={effectiveStats.low} emoji="🟢" accent="low" />
       </section>
 
-      {/* Charts */}
-      {!loading && tenders.length > 0 && (
+      {!loading && stats && (
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-slide-up">
-          <RiskDistributionChart tenders={tenders} />
-          <TopRiskyOrgsChart tenders={tenders} />
+          <RiskDistributionChart stats={stats} />
+
+          <div className="bg-card border border-border rounded-lg p-5 shadow-elevation-sm">
+            <div className="flex items-baseline justify-between mb-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+                Top Suspicious Companies
+              </h3>
+              <span className="text-xs text-muted-foreground">Highest scores</span>
+            </div>
+            <div className="space-y-3">
+              {stats.topSuspiciousCompanies.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No suspicious companies found.</p>
+              ) : (
+                stats.topSuspiciousCompanies.map((company) => (
+                  <button
+                    key={company.companyId}
+                    type="button"
+                    onClick={() => navigate(`/companies/${company.companyId}`)}
+                    className="flex w-full items-center justify-between rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/40"
+                  >
+                    <div>
+                      <p className="font-medium text-foreground">{company.companyName}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{company.companyId}</p>
+                    </div>
+                    <RiskBadge score={company.totalScore} level={company.suspicionLevel} size="sm" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
         </section>
       )}
 
-      {/* Table card */}
       <section className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-border">
-          <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-base font-semibold text-foreground">Tenders</h2>
+        <div className="p-5 border-b border-border space-y-4">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-base font-semibold text-foreground">Companies Suspicion List</h2>
             <span className="text-xs text-muted-foreground font-mono">
-              {filtered.length} of {tenders.length}
+              {filtered.length} of {companies.length}
             </span>
           </div>
-          <FiltersBar
-            search={search}
-            onSearchChange={setSearch}
-            riskFilter={riskFilter}
-            onRiskFilterChange={setRiskFilter}
-            organization={organization}
-            onOrganizationChange={setOrganization}
-            organizations={organizations}
-            onClear={clearFilters}
-            hasFilters={hasFilters}
-          />
+          <div className="flex flex-col gap-3 md:flex-row">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search company name..."
+              className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-sm"
+            />
+            <div className="flex rounded-md border border-input bg-background p-1">
+              {(["ALL", "HIGH", "MEDIUM", "LOW"] as const).map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setLevelFilter(level)}
+                  className={`rounded px-3 py-1.5 text-sm ${levelFilter === level ? "bg-muted text-foreground" : "text-muted-foreground"}`}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {loading ? (
           <LoadingState />
         ) : error ? (
           <div className="p-12 text-center text-sm text-risk-high">{error}</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-12 text-center text-sm text-muted-foreground">
+            No companies match the current filters.
+          </div>
         ) : (
-          <TenderTable tenders={filtered} onSelect={(t) => navigate(`/admin/tenders/${t.id}`)} />
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="py-3 pl-6 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Company</th>
+                  <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Suspicion</th>
+                  <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Wins</th>
+                  <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Failed projects</th>
+                  <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Top reasons</th>
+                  <th className="py-3 pl-3 pr-6 w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((company) => (
+                  <tr
+                    key={company.id}
+                    className="border-b border-border last:border-0 transition-colors hover:bg-muted/40"
+                  >
+                    <td className="py-4 pl-6 pr-3">
+                      <p className="font-medium text-foreground">{company.name}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{company.id}</p>
+                    </td>
+                    <td className="py-4 px-3">
+                      <RiskBadge score={company.suspicionScore} level={company.suspicionLevel} size="sm" />
+                    </td>
+                    <td className="py-4 px-3 text-right font-mono text-sm text-foreground">{company.totalWins}</td>
+                    <td className="py-4 px-3 text-right font-mono text-sm text-foreground">{company.failedProjects}</td>
+                    <td className="py-4 px-3 text-sm text-muted-foreground">
+                      {company.suspicionFlags.length > 0 ? company.suspicionFlags[0].message : "No suspicion flags"}
+                    </td>
+                    <td className="py-4 pl-3 pr-6 text-right">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/companies/${company.id}`)}
+                        className="inline-flex items-center gap-1 text-sm font-medium text-foreground hover:text-primary"
+                      >
+                        <AlertTriangle className="h-4 w-4" />
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </main>

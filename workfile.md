@@ -1,164 +1,266 @@
-# Tender Guardian Backend Workfile
+# Company Suspicion Migration Workfile
 
-## Purpose
+## Goal
 
-This file documents the backend API behavior that the frontend should integrate with.
-The most important flow for now is tender publishing by an admin user.
+The product should no longer label a tender itself as corrupt.
 
-## Base Notes
+Instead, the system should calculate a **suspicion score for companies** so the platform can identify companies that may be involved in corruption patterns and prevent future abuse.
 
-- Auth is token-based.
-- All protected requests must send:
-  - `Authorization: Token <token>`
-- Demo users:
-  - `admin / admin123`
-  - `acme / acme123`
-  - `nova / nova123`
+This update implements the backend side of that shift.
 
-## Tender Create Flow
+## Suspicion Logic Implemented
 
-### Business rule
+Company suspicion is now calculated from these cases:
 
-Admin publishes a tender first.
-Companies join later by submitting applications/bids.
+1. `Narx boyicha bozor va tender narxlarini solishtirish`
+   The system checks tenders won by a company and compares `final_price` vs `average_market_price`.
 
-Because of that, the create-tender API does **not** require participants.
-It also does **not** accept lifecycle-only fields such as winner/completion state.
+2. `Oldingi tenderda yutib, keyin uni amalga oshirmasa`
+   If a company wins a tender and later does not complete it, the company receives suspicion points.
+   Each failed completed tender increases suspicion.
 
-### Endpoint
+3. `Ketma-ket yutishi`
+   If a company wins at least 3 tenders in a row in the same organization/category flow, the company receives suspicion points.
 
-- `POST /tenders`
+4. `Soxta raqobat`
+   The system checks:
+   - repeated participation with the same companies
+   - bid prices that are very close, around 1-2%
+   - repeated winner vs repeated losing-company patterns, especially when this happens at least 4-5 times
 
-### Who can use it
+Higher score means more suspicious.
 
-- Admin only
+## New Backend Model
 
-### Request body
+The backend now stores company-level analysis in:
+
+- `CompanySuspicionAnalysis`
+- `CompanySuspicionReason`
+
+Important fields:
+
+- `total_score`
+- `suspicion_level`: `LOW | MEDIUM | HIGH`
+- `price_score`
+- `failed_delivery_score`
+- `consecutive_wins_score`
+- `fake_competition_score`
+
+## API Changes
+
+### 1. Companies are now the main risk/suspicion entity
+
+New primary endpoints:
+
+- `GET /companies`
+- `GET /companies/<companyId>`
+- `POST /companies/<companyId>/analyze`
+
+Risk aliases also now work with `companyId`:
+
+- `POST /risk/analyze/<companyId>`
+- `GET /risk/flags/<companyId>`
+- `GET /risk/stats`
+
+### 2. Tenders no longer return tender risk fields
+
+These fields were removed from tender list/detail payloads:
+
+- `riskScore`
+- `riskLevel`
+- `riskFlags`
+- nested tender-level risk analysis objects
+
+Tenders are still used as procurement records, but suspicion is attached to companies.
+
+## Response Shapes
+
+### `GET /companies`
 
 ```json
-{
-  "title": "School Computer Procurement 2026",
-  "organization": "Ministry of Education",
-  "category": "IT Equipment",
-  "budget": "120000.00",
-  "average_market_price": "110000.00",
-  "final_price": "0.00",
-  "created_at": "2026-04-25T09:00:00Z",
-  "deadline": "2026-05-02T09:00:00Z"
-}
+[
+  {
+    "id": "c-alpha-infrastructure",
+    "name": "Alpha Infrastructure",
+    "total_participations": 15,
+    "total_wins": 7,
+    "completed_projects": 6,
+    "failed_projects": 1,
+    "created_at": "2026-04-25T10:00:00Z",
+    "updated_at": "2026-04-25T10:00:00Z",
+    "suspicionScore": 78,
+    "suspicionLevel": "HIGH",
+    "suspicionFlags": [
+      {
+        "severity": "critical",
+        "message": "Alpha Infrastructure won 5 consecutive tenders..."
+      }
+    ]
+  }
+]
 ```
 
-### Required fields
-
-- `title`
-- `organization`
-- `category`
-- `budget`
-- `average_market_price`
-- `created_at`
-- `deadline`
-
-### Optional fields
-
-- `final_price`
-  - if omitted, backend defaults it to `"0.00"`
-
-### Fields intentionally NOT accepted on create
-
-These are backend-managed or later-stage workflow fields and should not be sent by the frontend on tender creation:
-
-- `participant_ids`
-- `participants_count`
-- `winner_company_id`
-- `status`
-- `is_completed_by_winner`
-- `bids`
-- `risk_analysis`
-- `reasons`
-
-### Backend behavior on create
-
-When a tender is created:
-
-- `status` is automatically set to `active`
-- `participants_count` is automatically set to `0`
-- `winner_company` is automatically set to `null`
-- `is_completed_by_winner` is automatically set to `null`
-- risk analysis is created automatically
-
-### Validation rules
-
-- `deadline` must be later than `created_at`
-- no participants are required
-
-### Successful response
-
-The create endpoint returns the created tender in frontend-friendly read format.
-
-Example:
+### `GET /companies/<companyId>`
 
 ```json
 {
-  "id": "T-2026-0008",
-  "title": "School Computer Procurement 2026",
-  "organization": "Ministry of Education",
-  "category": "IT Equipment",
-  "budget": "120000.00",
-  "averageMarketPrice": "110000.00",
-  "finalPrice": "0.00",
-  "participantsCount": 0,
-  "winnerCompanyId": null,
-  "status": "active",
-  "createdAt": "2026-04-25T09:00:00Z",
-  "deadline": "2026-05-02T09:00:00Z",
-  "riskScore": 0,
-  "riskLevel": "LOW",
-  "riskFlags": [],
-  "riskAnalysis": {
-    "total_score": 0,
-    "risk_level": "low",
-    "price_score": 0,
-    "company_history_score": 0,
-    "consecutive_wins_score": 0,
-    "participants_score": 0,
-    "fake_competition_score": 0,
-    "ai_summary": "",
-    "analyzed_at": "2026-04-25T09:00:01Z",
-    "reasons": []
+  "id": "c-alpha-infrastructure",
+  "name": "Alpha Infrastructure",
+  "total_participations": 15,
+  "total_wins": 7,
+  "completed_projects": 6,
+  "failed_projects": 1,
+  "created_at": "2026-04-25T10:00:00Z",
+  "updated_at": "2026-04-25T10:00:00Z",
+  "suspicionScore": 78,
+  "suspicionLevel": "HIGH",
+  "suspicionFlags": [
+    {
+      "severity": "critical",
+      "message": "Alpha Infrastructure won 5 consecutive tenders..."
+    }
+  ],
+  "suspicionAnalysis": {
+    "total_score": 78,
+    "suspicion_level": "high",
+    "price_score": 20,
+    "failed_delivery_score": 20,
+    "consecutive_wins_score": 20,
+    "fake_competition_score": 18,
+    "analyzed_at": "2026-04-25T10:00:00Z",
+    "reasons": [
+      {
+        "id": 1,
+        "title": "Consecutive wins pattern",
+        "description": "Alpha Infrastructure won 4 consecutive tenders...",
+        "score": 20,
+        "created_at": "2026-04-25T10:00:00Z"
+      }
+    ]
   },
-  "reasons": [],
-  "bids": []
+  "reasons": [
+    {
+      "id": 1,
+      "title": "Consecutive wins pattern",
+      "description": "Alpha Infrastructure won 4 consecutive tenders...",
+      "score": 20,
+      "created_at": "2026-04-25T10:00:00Z"
+    }
+  ]
 }
 ```
 
-## Tender Participation Flow
+### `POST /risk/analyze/<companyId>`
 
-### How companies join a tender
+```json
+{
+  "companyId": "c-alpha-infrastructure",
+  "companyName": "Alpha Infrastructure",
+  "totalScore": 78,
+  "suspicionLevel": "HIGH",
+  "price_score": 20,
+  "failed_delivery_score": 20,
+  "consecutive_wins_score": 20,
+  "fake_competition_score": 18,
+  "suspicionFlags": [
+    {
+      "severity": "critical",
+      "message": "Alpha Infrastructure won 4 consecutive tenders..."
+    }
+  ]
+}
+```
 
-Companies do not get inserted into a tender by admin during create.
-They join by creating an application.
+### `GET /risk/stats`
 
-Endpoint:
+```json
+{
+  "total": 6,
+  "high": 1,
+  "medium": 2,
+  "low": 3,
+  "distribution": {
+    "HIGH": 1,
+    "MEDIUM": 2,
+    "LOW": 3
+  },
+  "top_suspicious_companies": [
+    {
+      "companyId": "c-alpha-infrastructure",
+      "companyName": "Alpha Infrastructure",
+      "totalScore": 78,
+      "suspicionLevel": "HIGH"
+    }
+  ],
+  "total_analyzed_companies": 6
+}
+```
 
-- `POST /applications`
+## Frontend Update Required
 
-When an application is created:
+There is no frontend code in this repository, so the frontend still needs to be updated separately.
 
-- the company is added to `tender.participants`
-- `participants_count` is updated
-- risk analysis is recalculated
+### Replace the old tender-risk UI
 
-## Frontend Guidance
+Frontend should stop using tender cards/tables like:
 
-For the create-tender page:
+- tender risk score
+- tender risk level
+- tender risk flags
 
-- show only publish-time fields
-- do not send participant fields
-- do not send winner fields
-- do not send completion fields
-- treat a newly created tender as open for company applications
+### Build company-based suspicion UI instead
 
-## Summary
+Recommended pages/components:
 
-Frontend should treat tender creation as a publishing step, not a full tender-finalization step.
-The backend now matches that flow.
+1. `Companies Suspicion List`
+   Source: `GET /companies`
+   Columns:
+   - company name
+   - suspicion score
+   - suspicion level
+   - total wins
+   - failed projects
+   - top suspicion reasons
+
+2. `Company Suspicion Detail`
+   Source: `GET /companies/<companyId>`
+   Show:
+   - company profile
+   - score breakdown
+   - all suspicion reasons
+   - tenders won by this company
+
+3. `Dashboard`
+   Source: `GET /risk/stats`
+   Show:
+   - high/medium/low company counts
+   - top suspicious companies
+   - simple charts by suspicion level
+
+### Frontend field mapping
+
+Old tender-based fields:
+
+- `riskScore`
+- `riskLevel`
+- `riskFlags`
+
+New company-based fields:
+
+- `suspicionScore`
+- `suspicionLevel`
+- `suspicionFlags`
+
+## Backend Notes
+
+- Tender CRUD still exists.
+- Application submission still exists.
+- When tenders or bids change, company suspicion is recalculated.
+- Company registration now also creates company suspicion analysis data.
+
+## Suggested Frontend Rollout
+
+1. Switch dashboard source from tender risk stats to company suspicion stats.
+2. Replace tender risk table with company suspicion table.
+3. Add company detail page using `GET /companies/<companyId>`.
+4. Remove any UI that assumes a tender itself has a corruption label.

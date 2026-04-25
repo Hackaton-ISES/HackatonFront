@@ -77,8 +77,7 @@ export default function AdminCreateTender() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Create tender</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Publish a new public procurement tender. Winner, participants, completion state, and
-          final price are set later by the backend workflow.
+          Publish a new public procurement tender for companies to review and apply to.
         </p>
       </div>
 
@@ -157,11 +156,6 @@ export default function AdminCreateTender() {
             />
           </div>
         </div>
-        <div className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-          New tenders are published as `active` with `0` participants, no winner, no completion
-          state, and `final_price = 0.00`. Companies join later through applications.
-        </div>
-
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="ghost" onClick={() => navigate("/admin")} disabled={submitting}>
             Cancel

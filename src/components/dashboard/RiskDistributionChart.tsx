@@ -1,74 +1,79 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import type { Tender } from "@/types/tender";
+import type { SuspicionStats } from "@/types/tender";
 
 interface RiskDistributionChartProps {
-  tenders: Tender[];
+  stats: SuspicionStats;
 }
 
-export function RiskDistributionChart({ tenders }: RiskDistributionChartProps) {
-  const counts = tenders.reduce(
-    (acc, t) => {
-      acc[t.riskLevel]++;
-      return acc;
-    },
-    { LOW: 0, MEDIUM: 0, HIGH: 0 } as Record<string, number>,
-  );
-
+export function RiskDistributionChart({ stats }: RiskDistributionChartProps) {
   const data = [
-    { name: "Low", value: counts.LOW, color: "hsl(var(--risk-low))" },
-    { name: "Medium", value: counts.MEDIUM, color: "hsl(var(--risk-medium))" },
-    { name: "High", value: counts.HIGH, color: "hsl(var(--risk-high))" },
-  ].filter((d) => d.value > 0);
-
-  const total = tenders.length;
+    { name: "Low", value: stats.low, color: "hsl(var(--risk-low))" },
+    { name: "Medium", value: stats.medium, color: "hsl(var(--risk-medium))" },
+    { name: "High", value: stats.high, color: "hsl(var(--risk-high))" },
+  ].filter((entry) => entry.value > 0);
 
   return (
-    <div className="bg-card border border-border rounded-lg p-5 shadow-elevation-sm">
+    <div className="bg-card border border-border rounded-lg p-5 shadow-elevation-sm animate-fade-in">
       <div className="flex items-baseline justify-between mb-4">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-          Risk Distribution
+          Suspicion Distribution
         </h3>
-        <span className="text-xs text-muted-foreground font-mono">{total} tenders</span>
+        <span className="text-xs text-muted-foreground font-mono">
+          {stats.totalAnalyzedCompanies} analyzed
+        </span>
       </div>
-      <div className="h-56 relative">
+
+      <div className="relative h-[20rem] sm:h-[22rem]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={55}
-              outerRadius={85}
-              paddingAngle={2}
+              innerRadius={78}
+              outerRadius={122}
+              paddingAngle={3}
               dataKey="value"
               stroke="hsl(var(--card))"
-              strokeWidth={2}
+              strokeWidth={3}
+              isAnimationActive
+              animationBegin={150}
+              animationDuration={950}
+              animationEasing="ease-out"
             >
-              {data.map((entry, i) => (
-                <Cell key={i} fill={entry.color} />
+              {data.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
               ))}
             </Pie>
             <Tooltip
+              formatter={(value: number) => [`${value}`, "Companies"]}
               contentStyle={{
                 backgroundColor: "hsl(var(--popover))",
                 border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
+                borderRadius: "12px",
                 fontSize: "12px",
               }}
             />
           </PieChart>
         </ResponsiveContainer>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-2xl font-bold font-mono text-foreground">{counts.HIGH}</span>
-          <span className="text-xs text-muted-foreground uppercase tracking-wider">High risk</span>
+
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            High Suspicion
+          </span>
+          <span className="mt-1 text-5xl font-bold font-mono text-foreground sm:text-6xl">{stats.high}</span>
+          <span className="mt-1 text-xs text-muted-foreground">
+            of {stats.total} companies
+          </span>
         </div>
       </div>
-      <div className="flex items-center justify-center gap-4 mt-2 text-xs">
-        {data.map((d) => (
-          <div key={d.name} className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+
+      <div className="mt-4 flex items-center justify-center gap-6 text-sm">
+        {data.map((entry) => (
+          <div key={entry.name} className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.color }} />
             <span className="text-muted-foreground">
-              {d.name} <span className="font-mono text-foreground font-medium">{d.value}</span>
+              {entry.name} <span className="font-mono font-medium text-foreground">{entry.value}</span>
             </span>
           </div>
         ))}

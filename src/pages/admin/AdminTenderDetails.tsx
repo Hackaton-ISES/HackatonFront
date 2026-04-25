@@ -6,17 +6,14 @@ import {
   Calendar,
   DollarSign,
   Tag,
-  TrendingUp,
   Trophy,
   Users,
 } from "lucide-react";
 import { Loader } from "@/components/common/Loader";
-import { RiskBadge } from "@/components/dashboard/RiskBadge";
-import { RiskFlagItem } from "@/components/dashboard/RiskFlagItem";
 import { RecommendedWinnerCard } from "@/components/dashboard/RecommendedWinnerCard";
 import { CountdownTimer } from "@/components/common/CountdownTimer";
 import { getApplications, getTenderById, updateApplicationStatus } from "@/lib/api";
-import { formatCurrency, formatDate, priceDeltaPct } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Application, Tender } from "@/types/tender";
@@ -92,11 +89,11 @@ export default function AdminTenderDetails() {
 
       if (status === "Won") {
         toast.success(`Marked ${app.companyName} as winner`, {
-          description: "Backend status updated successfully.",
+          description: "Status updated successfully.",
         });
       } else {
         toast(`Marked ${app.companyName} as not selected`, {
-          description: "Backend status updated successfully.",
+          description: "Status updated successfully.",
         });
       }
     } catch (err) {
@@ -125,9 +122,6 @@ export default function AdminTenderDetails() {
     );
   }
 
-  const delta = priceDeltaPct(tender.budget, tender.finalPrice);
-  const isAllPositive = tender.riskLevel === "LOW";
-
   return (
     <main className="container py-8 space-y-6 animate-fade-in">
       <Link
@@ -151,7 +145,6 @@ export default function AdminTenderDetails() {
               <CountdownTimer deadline={tender.deadline} />
             </div>
           </div>
-          <RiskBadge score={tender.riskScore} level={tender.riskLevel} size="lg" />
         </div>
       </div>
 
@@ -173,28 +166,15 @@ export default function AdminTenderDetails() {
           valueClassName="font-mono"
         />
         <MetaRow
-          icon={TrendingUp}
           label="Final price"
-          value={
-            <span className="flex items-baseline gap-2">
-              <span className="font-mono">{formatCurrency(tender.finalPrice)}</span>
-              <span
-                className={cn(
-                  "text-xs font-mono",
-                  delta > 15 ? "text-risk-high" : delta > 5 ? "text-risk-medium" : "text-risk-low",
-                )}
-              >
-                {delta > 0 ? "+" : ""}
-                {delta}%
-              </span>
-            </span>
-          }
+          icon={DollarSign}
+          value={formatCurrency(tender.finalPrice)}
+          valueClassName="font-mono"
         />
         <MetaRow
           icon={Users}
           label="Participants"
           value={`${tender.participantsCount} bidder${tender.participantsCount === 1 ? "" : "s"}`}
-          valueClassName={tender.participantsCount === 1 ? "text-risk-high" : ""}
         />
       </section>
 
@@ -297,35 +277,6 @@ export default function AdminTenderDetails() {
             </table>
           </div>
         )}
-      </section>
-
-
-      {/* Risk Analysis */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-            Risk Analysis
-          </h2>
-          <span className="text-xs text-muted-foreground">
-            {tender.riskFlags.filter((f) => (f.points ?? 0) > 0).length} triggered rule
-            {tender.riskFlags.filter((f) => (f.points ?? 0) > 0).length === 1 ? "" : "s"} · total{" "}
-            <span className="font-mono font-semibold text-foreground">{tender.riskScore}</span>/100
-          </span>
-        </div>
-        <div
-          className={cn(
-            "rounded-lg border p-5",
-            tender.riskLevel === "HIGH" && "bg-risk-high-bg/40 border-risk-high-border",
-            tender.riskLevel === "MEDIUM" && "bg-risk-medium-bg/40 border-risk-medium-border",
-            tender.riskLevel === "LOW" && "bg-risk-low-bg/40 border-risk-low-border",
-          )}
-        >
-          <ul className="space-y-2.5">
-            {tender.riskFlags.map((flag, i) => (
-              <RiskFlagItem key={i} flag={flag} positive={isAllPositive} />
-            ))}
-          </ul>
-        </div>
       </section>
     </main>
   );

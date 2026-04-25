@@ -17,7 +17,7 @@ export function RecommendedWinnerCard({ winner }: RecommendedWinnerCardProps) {
 
       {!winner ? (
         <div className="p-12 text-center text-sm text-muted-foreground">
-          No winner has been selected by the backend yet.
+          No winner has been selected yet.
         </div>
       ) : (
         <div className="p-5 flex flex-col sm:flex-row sm:items-center gap-5">
@@ -27,7 +27,7 @@ export function RecommendedWinnerCard({ winner }: RecommendedWinnerCardProps) {
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">
-                Backend-selected winner
+                Selected winner
               </p>
               <Link
                 to={`/companies/${winner.companyId}`}

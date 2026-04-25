@@ -1,4 +1,15 @@
-import type { Application, ApplicationStatus, RiskFlag, RiskLevel, Tender, User } from "@/types/tender";
+import type {
+  Application,
+  ApplicationStatus,
+  CompanyDetail,
+  CompanySummary,
+  RiskFlag,
+  RiskLevel,
+  SuspicionReason,
+  SuspicionStats,
+  Tender,
+  User,
+} from "@/types/tender";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/+$/, "");
 const USER_STORAGE_KEY = "tender_auth_user";
@@ -47,11 +58,59 @@ interface TenderDto {
   publishedAt?: string | null;
   deadline: string;
   description?: string | null;
-  riskScore?: number | null;
-  riskLevel?: RiskLevel | null;
-  riskFlags?: RiskFlagDto[] | null;
   reasons?: string[] | null;
   bids?: ApplicationDto[] | null;
+}
+
+interface SuspicionReasonDto {
+  id: number;
+  title: string;
+  description: string;
+  score: number;
+  created_at: string;
+}
+
+interface CompanySummaryDto {
+  id: string;
+  name: string;
+  total_participations: number;
+  total_wins: number;
+  completed_projects: number;
+  failed_projects: number;
+  created_at?: string;
+  updated_at?: string;
+  suspicionScore: number;
+  suspicionLevel: RiskLevel;
+  suspicionFlags?: RiskFlagDto[] | null;
+}
+
+interface CompanyDetailDto extends CompanySummaryDto {
+  suspicionAnalysis?: {
+    total_score: number;
+    suspicion_level: string;
+    price_score: number;
+    failed_delivery_score: number;
+    consecutive_wins_score: number;
+    fake_competition_score: number;
+    analyzed_at?: string;
+    reasons?: SuspicionReasonDto[] | null;
+  } | null;
+  reasons?: SuspicionReasonDto[] | null;
+}
+
+interface RiskStatsDto {
+  total: number;
+  high: number;
+  medium: number;
+  low: number;
+  distribution: Record<RiskLevel, number>;
+  top_suspicious_companies?: Array<{
+    companyId: string;
+    companyName: string;
+    totalScore: number;
+    suspicionLevel: RiskLevel;
+  }>;
+  total_analyzed_companies?: number;
 }
 
 interface ApplicationDto {
@@ -64,13 +123,6 @@ interface ApplicationDto {
   productDescription: string;
   status: string;
   submittedAt: string;
-}
-
-interface UserListItemDto {
-  id: string;
-  name: string;
-  total_participations?: number;
-  total_wins?: number;
 }
 
 interface RequestOptions extends Omit<RequestInit, "body"> {
@@ -96,12 +148,9 @@ export interface CreateApplicationInput {
   productDescription: string;
 }
 
-export interface CompanyProfile {
-  companyId: string;
-  companyName: string;
-  totalParticipations: number;
-  totalWins: number;
+export interface CompanyProfile extends CompanyDetail {
   winRate: number;
+  wonTenders: Tender[];
   history: Array<{
     application: Application;
     tender: Tender | undefined;
@@ -147,9 +196,7 @@ function normalizeStatus(status: string): ApplicationStatus {
 }
 
 function normalizeRiskFlags(flags: RiskFlagDto[] | null | undefined): RiskFlag[] {
-  if (!flags?.length) {
-    return [{ severity: "warning", message: "No risk flags returned by backend" }];
-  }
+  if (!flags?.length) return [];
 
   return flags.map((flag) => ({
     severity: flag.severity === "critical" ? "critical" : "warning",
@@ -170,6 +217,58 @@ function normalizeApplication(dto: ApplicationDto): Application {
     productDescription: dto.productDescription,
     status: normalizeStatus(dto.status),
     submittedAt: dto.submittedAt,
+  };
+}
+
+function normalizeSuspicionReason(dto: SuspicionReasonDto): SuspicionReason {
+  return {
+    id: dto.id,
+    title: dto.title,
+    description: dto.description,
+    score: dto.score,
+    createdAt: dto.created_at,
+  };
+}
+
+function normalizeSuspicionLevel(level: string | null | undefined): RiskLevel {
+  const normalized = level?.trim().toUpperCase();
+  if (normalized === "HIGH" || normalized === "MEDIUM") return normalized;
+  return "LOW";
+}
+
+function normalizeCompanySummary(dto: CompanySummaryDto): CompanySummary {
+  return {
+    id: dto.id,
+    name: dto.name,
+    totalParticipations: dto.total_participations,
+    totalWins: dto.total_wins,
+    completedProjects: dto.completed_projects,
+    failedProjects: dto.failed_projects,
+    createdAt: dto.created_at,
+    updatedAt: dto.updated_at,
+    suspicionScore: dto.suspicionScore ?? 0,
+    suspicionLevel: normalizeSuspicionLevel(dto.suspicionLevel),
+    suspicionFlags: normalizeRiskFlags(dto.suspicionFlags),
+  };
+}
+
+function normalizeCompanyDetail(dto: CompanyDetailDto): CompanyDetail {
+  const summary = normalizeCompanySummary(dto);
+  return {
+    ...summary,
+    suspicionAnalysis: dto.suspicionAnalysis
+      ? {
+          totalScore: dto.suspicionAnalysis.total_score,
+          suspicionLevel: normalizeSuspicionLevel(dto.suspicionAnalysis.suspicion_level),
+          priceScore: dto.suspicionAnalysis.price_score,
+          failedDeliveryScore: dto.suspicionAnalysis.failed_delivery_score,
+          consecutiveWinsScore: dto.suspicionAnalysis.consecutive_wins_score,
+          fakeCompetitionScore: dto.suspicionAnalysis.fake_competition_score,
+          analyzedAt: dto.suspicionAnalysis.analyzed_at,
+          reasons: (dto.suspicionAnalysis.reasons ?? []).map(normalizeSuspicionReason),
+        }
+      : undefined,
+    reasons: (dto.reasons ?? []).map(normalizeSuspicionReason),
   };
 }
 
@@ -194,9 +293,6 @@ function normalizeTender(dto: TenderDto): Tender {
     averageMarketPrice: toNumber(dto.averageMarketPrice ?? dto.average_market_price),
     finalPrice: toNumber(dto.finalPrice ?? dto.final_price),
     participantsCount: dto.participantsCount ?? dto.bids?.length ?? 0,
-    riskScore: dto.riskScore ?? 0,
-    riskLevel: dto.riskLevel ?? "LOW",
-    riskFlags: normalizeRiskFlags(dto.riskFlags),
     winner: resolveWinnerName(dto),
     winnerCompanyId: dto.winnerCompanyId ?? dto.winner_company_id ?? null,
     category: dto.category?.trim() || "General",
@@ -284,6 +380,34 @@ export async function getTenders(): Promise<Tender[]> {
   return response.map(normalizeTender);
 }
 
+export async function getCompanies(): Promise<CompanySummary[]> {
+  const response = await request<CompanySummaryDto[]>("/companies");
+  return response.map(normalizeCompanySummary);
+}
+
+export async function getCompanyById(companyId: string): Promise<CompanyDetail | null> {
+  try {
+    const response = await request<CompanyDetailDto>(`/companies/${companyId}`);
+    return normalizeCompanyDetail(response);
+  } catch (error) {
+    if (error instanceof Error && /404/.test(error.message)) return null;
+    throw error;
+  }
+}
+
+export async function getSuspicionStats(): Promise<SuspicionStats> {
+  const response = await request<RiskStatsDto>("/risk/stats");
+  return {
+    total: response.total,
+    high: response.high,
+    medium: response.medium,
+    low: response.low,
+    distribution: response.distribution,
+    topSuspiciousCompanies: response.top_suspicious_companies ?? [],
+    totalAnalyzedCompanies: response.total_analyzed_companies ?? response.total,
+  };
+}
+
 export async function getTenderById(id: string): Promise<Tender | undefined> {
   const response = await request<TenderDto>(`/tenders/${id}`);
   return normalizeTender(response);
@@ -340,31 +464,33 @@ export async function updateApplicationStatus(
 }
 
 export async function getCompanyProfile(companyId: string): Promise<CompanyProfile | null> {
-  const [applications, tenders] = await Promise.all([
+  const [company, applications, tenders] = await Promise.all([
+    getCompanyById(companyId),
     getApplications({ companyId }),
     getTenders(),
   ]);
 
-  let companyName = applications[0]?.companyName;
-
-  if (!companyName) {
-    try {
-      const users = await request<UserListItemDto[]>("/users");
-      companyName = users.find((item) => item.id === companyId)?.name;
-    } catch {
-      companyName = undefined;
-    }
-  }
-
-  if (!companyName && applications.length === 0) return null;
-
   const wins = applications.filter((application) => application.status === "Won").length;
+  const wonTenders = tenders.filter((tender) => tender.winnerCompanyId === companyId);
+
+  if (!company && applications.length === 0 && wonTenders.length === 0) return null;
+
   return {
-    companyId,
-    companyName: companyName ?? companyId,
-    totalParticipations: applications.length,
-    totalWins: wins,
+    id: company?.id ?? companyId,
+    name: company?.name ?? applications[0]?.companyName ?? companyId,
+    totalParticipations: company?.totalParticipations ?? applications.length,
+    totalWins: company?.totalWins ?? wins,
+    completedProjects: company?.completedProjects ?? wonTenders.length,
+    failedProjects: company?.failedProjects ?? 0,
+    suspicionScore: company?.suspicionScore ?? 0,
+    suspicionLevel: company?.suspicionLevel ?? "LOW",
+    suspicionFlags: company?.suspicionFlags ?? [],
+    createdAt: company?.createdAt,
+    updatedAt: company?.updatedAt,
+    suspicionAnalysis: company?.suspicionAnalysis,
+    reasons: company?.reasons ?? [],
     winRate: applications.length ? Math.round((wins / applications.length) * 100) : 0,
+    wonTenders,
     history: applications.map((application) => ({
       application,
       tender: tenders.find((tender) => tender.id === application.tenderId),

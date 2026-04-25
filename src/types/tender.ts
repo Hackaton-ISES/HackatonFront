@@ -57,9 +57,6 @@ export interface Tender {
   averageMarketPrice?: number;
   finalPrice: number;
   participantsCount: number;
-  riskScore: number; // 0-100
-  riskLevel: RiskLevel;
-  riskFlags: RiskFlag[];
   winner: string;
   winnerCompanyId?: string | null;
   category: string;
@@ -68,6 +65,57 @@ export interface Tender {
   description: string;
   status?: string;
   reasons?: string[];
+}
+
+export interface SuspicionReason {
+  id: number;
+  title: string;
+  description: string;
+  score: number;
+  createdAt: string;
+}
+
+export interface CompanySummary {
+  id: string;
+  name: string;
+  totalParticipations: number;
+  totalWins: number;
+  completedProjects: number;
+  failedProjects: number;
+  suspicionScore: number;
+  suspicionLevel: RiskLevel;
+  suspicionFlags: RiskFlag[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CompanyDetail extends CompanySummary {
+  suspicionAnalysis?: {
+    totalScore: number;
+    suspicionLevel: RiskLevel;
+    priceScore: number;
+    failedDeliveryScore: number;
+    consecutiveWinsScore: number;
+    fakeCompetitionScore: number;
+    analyzedAt?: string;
+    reasons: SuspicionReason[];
+  };
+  reasons: SuspicionReason[];
+}
+
+export interface SuspicionStats {
+  total: number;
+  high: number;
+  medium: number;
+  low: number;
+  distribution: Record<RiskLevel, number>;
+  topSuspiciousCompanies: Array<{
+    companyId: string;
+    companyName: string;
+    totalScore: number;
+    suspicionLevel: RiskLevel;
+  }>;
+  totalAnalyzedCompanies: number;
 }
 
 export type UserRole = "admin" | "company";
