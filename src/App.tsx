@@ -13,6 +13,7 @@ import MyApplications from "./pages/company/MyApplications";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminTenderDetails from "./pages/admin/AdminTenderDetails";
 import AdminCreateTender from "./pages/admin/AdminCreateTender";
+import AdminEditTender from "./pages/admin/AdminEditTender";
 import CompanyProfilePage from "./pages/CompanyProfilePage";
 import NotFound from "./pages/NotFound";
 
@@ -51,6 +52,7 @@ const App = () => (
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/admin/create" element={<AdminCreateTender />} />
                   <Route path="/admin/tenders/:id" element={<AdminTenderDetails />} />
+                  <Route path="/admin/tenders/:id/edit" element={<AdminEditTender />} />
                 </Route>
 
                 {/* Shared (admin + company) */}

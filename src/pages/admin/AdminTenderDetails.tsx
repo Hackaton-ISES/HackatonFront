@@ -5,6 +5,8 @@ import {
   Building2,
   Calendar,
   DollarSign,
+  Lock,
+  Pencil,
   Tag,
   Trophy,
   Users,
@@ -75,29 +77,32 @@ export default function AdminTenderDetails() {
     () => participants.find((participant) => participant.status === "Won") ?? null,
     [participants],
   );
+  const winnerLocked = Boolean(selectedWinner) || Boolean(tender?.winnerCompanyId);
 
-  const handleStatusUpdate = async (appId: string, status: "Won" | "Lost") => {
+  const handleFinalizeWinner = async (appId: string) => {
     const app = participants.find((p) => p.id === appId);
     if (!app) return;
+    if (winnerLocked) {
+      toast.error("Winner has already been finalized for this tender");
+      return;
+    }
 
     setUpdatingId(appId);
     try {
-      await updateApplicationStatus(appId, status);
+      await updateApplicationStatus(appId, "Won");
+      await Promise.all(
+        participants
+          .filter((participant) => participant.id !== appId && participant.status !== "Lost")
+          .map((participant) => updateApplicationStatus(participant.id, "Lost")),
+      );
       if (id) {
         await loadData(id);
       }
-
-      if (status === "Won") {
-        toast.success(`Marked ${app.companyName} as winner`, {
-          description: "Status updated successfully.",
-        });
-      } else {
-        toast(`Marked ${app.companyName} as not selected`, {
-          description: "Status updated successfully.",
-        });
-      }
+      toast.success(`Finalized ${app.companyName} as winner`, {
+        description: "All other applications were marked as lost.",
+      });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update application status");
+      toast.error(err instanceof Error ? err.message : "Failed to finalize winner");
     } finally {
       setUpdatingId(null);
     }
@@ -145,6 +150,22 @@ export default function AdminTenderDetails() {
               <CountdownTimer deadline={tender.deadline} />
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            {winnerLocked ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/10 px-3 py-1.5 text-sm text-primary-foreground/80">
+                <Lock className="h-4 w-4" />
+                Winner locked
+              </span>
+            ) : (
+              <Link
+                to={`/admin/tenders/${tender.id}/edit`}
+                className="inline-flex items-center gap-2 rounded-md bg-primary-foreground/10 px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/15"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit tender
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
@@ -184,6 +205,11 @@ export default function AdminTenderDetails() {
           <h2 className="text-base font-semibold text-foreground">Participants</h2>
           <span className="text-xs text-muted-foreground font-mono">{participants.length}</span>
         </div>
+        {winnerLocked && (
+          <div className="border-b border-border bg-muted/20 px-5 py-3 text-sm text-muted-foreground">
+            Winner selection is finalized. Application statuses are locked for this tender.
+          </div>
+        )}
         {participants.length === 0 ? (
           <div className="p-12 text-center text-sm text-muted-foreground">
             No applications submitted for this tender yet.
@@ -253,22 +279,17 @@ export default function AdminTenderDetails() {
                         </span>
                       </td>
                       <td className="py-4 pl-3 pr-6 text-right">
-                        <div className="inline-flex gap-1.5">
+                        {winnerLocked ? (
+                          <span className="text-xs text-muted-foreground">Locked</span>
+                        ) : (
                           <button
-                            onClick={() => void handleStatusUpdate(p.id, "Won")}
-                            disabled={p.status === "Won" || updatingId === p.id}
-                            className="rounded-md border border-risk-low-border bg-risk-low-bg px-2.5 py-1 text-xs font-medium text-risk-low transition-all hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
+                            onClick={() => void handleFinalizeWinner(p.id)}
+                            disabled={updatingId !== null}
+                            className="rounded-md border border-risk-low-border bg-risk-low-bg px-3 py-1.5 text-xs font-medium text-risk-low transition-all hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
                           >
-                            Win
+                            Select winner
                           </button>
-                          <button
-                            onClick={() => void handleStatusUpdate(p.id, "Lost")}
-                            disabled={p.status === "Lost" || updatingId === p.id}
-                            className="rounded-md border border-risk-high-border bg-risk-high-bg px-2.5 py-1 text-xs font-medium text-risk-high transition-all hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
-                          >
-                            Lose
-                          </button>
-                        </div>
+                        )}
                       </td>
                     </tr>
                   );

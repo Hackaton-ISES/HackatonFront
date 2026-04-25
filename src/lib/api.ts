@@ -142,6 +142,9 @@ export interface CreateTenderInput {
   budget: number;
   averageMarketPrice: number;
   deadline: string;
+  createdAt?: string;
+  finalPrice?: number;
+  status?: string;
 }
 
 export interface CreateApplicationInput {
@@ -459,9 +462,27 @@ export async function createTender(input: CreateTenderInput): Promise<Tender> {
       category: input.category.trim(),
       budget: input.budget.toFixed(2),
       average_market_price: input.averageMarketPrice.toFixed(2),
-      final_price: "0.00",
-      status: "active",
-      created_at: nowIso(),
+      final_price: (input.finalPrice ?? 0).toFixed(2),
+      status: input.status ?? "active",
+      created_at: input.createdAt ?? nowIso(),
+      deadline: new Date(input.deadline).toISOString(),
+    },
+  });
+  return normalizeTender(response);
+}
+
+export async function updateTender(tenderId: string, input: CreateTenderInput): Promise<Tender> {
+  const response = await request<TenderDto>(`/tenders/${tenderId}`, {
+    method: "PUT",
+    body: {
+      title: input.title,
+      organization: input.organization,
+      category: input.category.trim(),
+      budget: input.budget.toFixed(2),
+      average_market_price: input.averageMarketPrice.toFixed(2),
+      final_price: (input.finalPrice ?? 0).toFixed(2),
+      status: input.status ?? "active",
+      created_at: input.createdAt ?? nowIso(),
       deadline: new Date(input.deadline).toISOString(),
     },
   });
