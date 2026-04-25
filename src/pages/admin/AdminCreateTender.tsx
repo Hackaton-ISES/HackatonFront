@@ -36,7 +36,7 @@ export default function AdminCreateTender() {
   return (
     <main className="container py-8 max-w-2xl">
       <Link
-        to="/admin"
+        to="/admin/tenders"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -62,7 +62,7 @@ export default function AdminCreateTender() {
         submitLabel="Create tender"
         submittingLabel="Creating tender..."
         onSubmit={handleSubmit}
-        onCancel={() => navigate("/admin")}
+        onCancel={() => navigate("/admin/tenders")}
       />
     </main>
   );

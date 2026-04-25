@@ -53,8 +53,8 @@ export default function AdminEditTender() {
     return (
       <main className="container py-20 text-center">
         <p className="text-sm text-muted-foreground">Tender not found.</p>
-        <Link to="/admin" className="text-sm text-primary underline mt-2 inline-block">
-          Back to dashboard
+        <Link to="/admin/tenders" className="text-sm text-primary underline mt-2 inline-block">
+          Back to tenders
         </Link>
       </main>
     );

@@ -12,7 +12,7 @@ export function Navbar() {
 
   const adminLinks = [
     { to: "/admin", label: "Dashboard" },
-    { to: "/admin/create", label: "Create tender" },
+    { to: "/admin/tenders", label: "Tenders" },
   ];
   const companyLinks = [
     { to: "/company", label: "Tenders" },

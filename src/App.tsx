@@ -11,6 +11,7 @@ import RegisterCompany from "./pages/RegisterCompany";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
 import MyApplications from "./pages/company/MyApplications";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminTendersPage from "./pages/admin/AdminTendersPage";
 import AdminTenderDetails from "./pages/admin/AdminTenderDetails";
 import AdminCreateTender from "./pages/admin/AdminCreateTender";
 import AdminEditTender from "./pages/admin/AdminEditTender";
@@ -50,7 +51,8 @@ const App = () => (
                 {/* Admin */}
                 <Route element={<ProtectedRoute role="admin" />}>
                   <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/admin/create" element={<AdminCreateTender />} />
+                  <Route path="/admin/tenders" element={<AdminTendersPage />} />
+                  <Route path="/admin/tenders/create" element={<AdminCreateTender />} />
                   <Route path="/admin/tenders/:id" element={<AdminTenderDetails />} />
                   <Route path="/admin/tenders/:id/edit" element={<AdminEditTender />} />
                 </Route>
