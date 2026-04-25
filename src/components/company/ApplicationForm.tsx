@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import {
   Dialog,
@@ -59,6 +59,10 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
   const [productDescription, setProductDescription] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setCompanyName(user?.name ?? "");
+  }, [user?.name]);
 
   if (!tender) return null;
 

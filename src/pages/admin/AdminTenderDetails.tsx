@@ -15,7 +15,7 @@ import { RiskBadge } from "@/components/dashboard/RiskBadge";
 import { RiskFlagItem } from "@/components/dashboard/RiskFlagItem";
 import { RecommendedWinnerCard } from "@/components/dashboard/RecommendedWinnerCard";
 import { CountdownTimer } from "@/components/common/CountdownTimer";
-import { getApplications, getTenderById, recommendWinner } from "@/lib/api";
+import { getApplications, getTenderById, updateApplicationStatus } from "@/lib/api";
 import { formatCurrency, formatDate, priceDeltaPct } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -45,38 +45,64 @@ export default function AdminTenderDetails() {
   const [tender, setTender] = useState<Tender | null>(null);
   const [participants, setParticipants] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const loadData = async (tenderId: string) => {
+    const [t, p] = await Promise.all([getTenderById(tenderId), getApplications({ tenderId })]);
+    setTender(t ?? null);
+    setParticipants(p);
+  };
 
   useEffect(() => {
+    let cancelled = false;
     if (!id) return;
     setLoading(true);
-    Promise.all([getTenderById(id), getApplications({ tenderId: id })])
-      .then(([t, p]) => {
-        setTender(t ?? null);
-        setParticipants(p);
+    loadData(id)
+      .catch(() => {
+        if (!cancelled) {
+          setTender(null);
+          setParticipants([]);
+        }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
-  const recommendation = useMemo(
-    () => (tender ? recommendWinner(tender, participants) : null),
-    [tender, participants],
+  const selectedWinner = useMemo(
+    () => participants.find((participant) => participant.status === "Won") ?? null,
+    [participants],
   );
 
-  // Simulated status updates (mock backend) — broadcast as toasts so companies "see" them.
-  const updateApplicationStatus = (appId: string, status: "Won" | "Lost") => {
-    setParticipants((prev) =>
-      prev.map((p) => (p.id === appId ? { ...p, status } : p)),
-    );
+  const handleStatusUpdate = async (appId: string, status: "Won" | "Lost") => {
     const app = participants.find((p) => p.id === appId);
     if (!app) return;
-    if (status === "Won") {
-      toast.success(`Marked ${app.companyName} as winner`, {
-        description: "🏆 Notification sent: \"You won the tender\"",
-      });
-    } else {
-      toast(`Marked ${app.companyName} as not selected`, {
-        description: "Notification sent: \"You lost the tender\"",
-      });
+
+    setUpdatingId(appId);
+    try {
+      await updateApplicationStatus(appId, status);
+      if (id) {
+        await loadData(id);
+      }
+
+      if (status === "Won") {
+        toast.success(`Marked ${app.companyName} as winner`, {
+          description: "Backend status updated successfully.",
+        });
+      } else {
+        toast(`Marked ${app.companyName} as not selected`, {
+          description: "Backend status updated successfully.",
+        });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update application status");
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -129,8 +155,8 @@ export default function AdminTenderDetails() {
         </div>
       </div>
 
-      {/* Recommended winner */}
-      <RecommendedWinnerCard recommendation={recommendation} />
+      {/* Selected winner */}
+      <RecommendedWinnerCard winner={selectedWinner} />
 
 
       {/* Meta */}
@@ -206,13 +232,13 @@ export default function AdminTenderDetails() {
               </thead>
               <tbody>
                 {participants.map((p) => {
-                  const isRecommended = recommendation?.application.id === p.id;
+                  const isSelectedWinner = selectedWinner?.id === p.id;
                   return (
                     <tr
                       key={p.id}
                       className={cn(
                         "border-b border-border last:border-0 transition-colors hover:bg-muted/40",
-                        isRecommended && "bg-risk-low-bg/30",
+                        isSelectedWinner && "bg-risk-low-bg/30",
                       )}
                     >
                       <td className="py-4 pl-6 pr-3 text-sm">
@@ -222,9 +248,9 @@ export default function AdminTenderDetails() {
                         >
                           {p.companyName}
                         </Link>
-                        {isRecommended && (
+                        {isSelectedWinner && (
                           <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-risk-low-bg text-risk-low px-2 py-0.5 text-[10px] font-medium">
-                            ★ Recommended
+                            ★ Winner
                           </span>
                         )}
                       </td>
@@ -249,15 +275,15 @@ export default function AdminTenderDetails() {
                       <td className="py-4 pl-3 pr-6 text-right">
                         <div className="inline-flex gap-1.5">
                           <button
-                            onClick={() => updateApplicationStatus(p.id, "Won")}
-                            disabled={p.status === "Won"}
+                            onClick={() => void handleStatusUpdate(p.id, "Won")}
+                            disabled={p.status === "Won" || updatingId === p.id}
                             className="rounded-md border border-risk-low-border bg-risk-low-bg px-2.5 py-1 text-xs font-medium text-risk-low transition-all hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
                           >
                             Win
                           </button>
                           <button
-                            onClick={() => updateApplicationStatus(p.id, "Lost")}
-                            disabled={p.status === "Lost"}
+                            onClick={() => void handleStatusUpdate(p.id, "Lost")}
+                            disabled={p.status === "Lost" || updatingId === p.id}
                             className="rounded-md border border-risk-high-border bg-risk-high-bg px-2.5 py-1 text-xs font-medium text-risk-high transition-all hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
                           >
                             Lose

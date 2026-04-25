@@ -54,16 +54,20 @@ export interface Tender {
   title: string;
   organization: string;
   budget: number;
+  averageMarketPrice?: number;
   finalPrice: number;
   participantsCount: number;
   riskScore: number; // 0-100
   riskLevel: RiskLevel;
   riskFlags: RiskFlag[];
   winner: string;
+  winnerCompanyId?: string | null;
   category: string;
   publishedAt: string;
   deadline: string;
   description: string;
+  status?: string;
+  reasons?: string[];
 }
 
 export type UserRole = "admin" | "company";

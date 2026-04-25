@@ -1,82 +1,90 @@
-import type { Application, Tender } from "@/types/tender";
-import { mockApplications, mockTenders } from "./mockTenders";
-import { mockBidsByTender, mockCompanyHistory } from "./mockCompanyHistory";
-import { scoreTender } from "./riskScoring";
+import type { Application, ApplicationStatus, RiskFlag, RiskLevel, Tender, User } from "@/types/tender";
 
-// Replace these mock implementations with real fetch/axios calls when the backend is ready.
-// e.g. const res = await fetch(`${API_BASE}/tenders`); return res.json();
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/+$/, "");
+const USER_STORAGE_KEY = "tender_auth_user";
+const TOKEN_STORAGE_KEY = "tender_auth_token";
 
-const NETWORK_DELAY = 400;
-const wait = (ms = NETWORK_DELAY) => new Promise((r) => setTimeout(r, ms));
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
-// In-memory store seeded from mocks. Persists for the session.
-let tenders: Tender[] = [...mockTenders];
-let applications: Application[] = [...mockApplications];
-
-/** Run the modular risk engine over a tender and merge results back in. */
-function applyRiskEngine(t: Tender): Tender {
-  const result = scoreTender(t, {
-    bids: mockBidsByTender[t.id],
-    historyByCompany: mockCompanyHistory,
-  });
-  return {
-    ...t,
-    riskScore: result.riskScore,
-    riskLevel: result.riskLevel,
-    riskFlags: result.flags,
-  };
+interface ApiUser {
+  id: string;
+  login: string;
+  name: string;
+  role: User["role"];
 }
 
-export async function getTenders(): Promise<Tender[]> {
-  await wait();
-  return tenders.map(applyRiskEngine);
+interface AuthResponseDto {
+  user: ApiUser;
+  token: string;
 }
 
-export async function getTenderById(id: string): Promise<Tender | undefined> {
-  await wait(200);
-  const t = tenders.find((x) => x.id === id);
-  return t ? applyRiskEngine(t) : undefined;
+interface RiskFlagDto {
+  severity?: string | null;
+  message?: string | null;
+  points?: number | null;
+  rule?: RiskFlag["rule"];
+}
+
+interface TenderDto {
+  id: string;
+  title: string;
+  organization: string;
+  category?: string | null;
+  budget?: string | number | null;
+  averageMarketPrice?: string | number | null;
+  average_market_price?: string | number | null;
+  finalPrice?: string | number | null;
+  final_price?: string | number | null;
+  participantsCount?: number | null;
+  winnerCompanyId?: string | null;
+  winner_company_id?: string | null;
+  winnerCompanyName?: string | null;
+  winner_company_name?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
+  created_at?: string | null;
+  publishedAt?: string | null;
+  deadline: string;
+  description?: string | null;
+  riskScore?: number | null;
+  riskLevel?: RiskLevel | null;
+  riskFlags?: RiskFlagDto[] | null;
+  reasons?: string[] | null;
+  bids?: ApplicationDto[] | null;
+}
+
+interface ApplicationDto {
+  id: string;
+  tenderId: string;
+  companyId: string;
+  companyName: string;
+  proposedPrice: string | number;
+  productName: string;
+  productDescription: string;
+  status: string;
+  submittedAt: string;
+}
+
+interface UserListItemDto {
+  id: string;
+  name: string;
+  total_participations?: number;
+  total_wins?: number;
+}
+
+interface RequestOptions extends Omit<RequestInit, "body"> {
+  auth?: boolean;
+  body?: JsonValue;
 }
 
 export interface CreateTenderInput {
   title: string;
   organization: string;
+  category: string;
   budget: number;
+  averageMarketPrice: number;
   deadline: string;
-  description?: string;
-  category?: string;
-}
-
-export async function createTender(input: CreateTenderInput): Promise<Tender> {
-  await wait(300);
-  const id = `T-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
-  const tender: Tender = {
-    id,
-    title: input.title,
-    organization: input.organization,
-    budget: input.budget,
-    finalPrice: input.budget,
-    participantsCount: 0,
-    riskScore: 0,
-    riskLevel: "LOW",
-    riskFlags: [{ severity: "warning", message: "Newly published — awaiting bids" }],
-    winner: "—",
-    category: input.category ?? "General",
-    publishedAt: new Date().toISOString().slice(0, 10),
-    deadline: input.deadline,
-    description: input.description ?? "No description provided.",
-  };
-  tenders = [tender, ...tenders];
-  return tender;
-}
-
-export async function getApplications(filters?: { companyId?: string; tenderId?: string }): Promise<Application[]> {
-  await wait(250);
-  return applications.filter((a) => {
-    if (filters?.companyId && a.companyId !== filters.companyId) return false;
-    if (filters?.tenderId && a.tenderId !== filters.tenderId) return false;
-    return true;
-  });
 }
 
 export interface CreateApplicationInput {
@@ -88,95 +96,278 @@ export interface CreateApplicationInput {
   productDescription: string;
 }
 
-export async function createApplication(input: CreateApplicationInput): Promise<Application> {
-  await wait(350);
-  const app: Application = {
-    id: `A-${Date.now().toString(36).toUpperCase()}`,
-    ...input,
-    status: "Pending",
-    submittedAt: new Date().toISOString().slice(0, 10),
-  };
-  applications = [app, ...applications];
-  // bump participants count on the tender
-  tenders = tenders.map((t) =>
-    t.id === input.tenderId ? { ...t, participantsCount: t.participantsCount + 1 } : t,
-  );
-  return app;
-}
-
-export interface RecommendedWinner {
-  application: Application;
-  reasons: string[];
-  /** Heuristic 0-100 (lower = better fit) used purely for explanation. */
-  score: number;
-}
-
-/**
- * Recommend the best applicant for a tender based on:
- *  - Lowest proposed price
- *  - Lowest tender risk score (proxy for company risk in MVP)
- * Returns null when there are no applicants.
- */
-export function recommendWinner(
-  tender: Pick<Tender, "id" | "riskScore">,
-  apps: Application[],
-): RecommendedWinner | null {
-  const candidates = apps.filter((a) => a.tenderId === tender.id);
-  if (candidates.length === 0) return null;
-
-  const minPrice = Math.min(...candidates.map((c) => c.proposedPrice));
-  const maxPrice = Math.max(...candidates.map((c) => c.proposedPrice));
-  const priceRange = maxPrice - minPrice || 1;
-
-  // Score each: 70% price competitiveness + 30% tender risk penalty
-  const scored = candidates.map((c) => {
-    const priceScore = ((c.proposedPrice - minPrice) / priceRange) * 70;
-    const riskScore = (tender.riskScore / 100) * 30;
-    return { app: c, score: priceScore + riskScore };
-  });
-
-  scored.sort((a, b) => a.score - b.score);
-  const best = scored[0];
-
-  const reasons: string[] = [];
-  if (best.app.proposedPrice === minPrice) reasons.push("Lowest proposed price");
-  if (tender.riskScore < 40) reasons.push("Low tender risk score");
-  else if (tender.riskScore < 70) reasons.push("Acceptable risk profile");
-  if (candidates.length >= 3) reasons.push(`Competitive pool (${candidates.length} bidders)`);
-  if (reasons.length === 0) reasons.push("Best balance of price and risk");
-
-  return { application: best.app, reasons, score: Math.round(best.score) };
-}
-
 export interface CompanyProfile {
   companyId: string;
   companyName: string;
   totalParticipations: number;
   totalWins: number;
-  winRate: number; // 0-100
+  winRate: number;
   history: Array<{
     application: Application;
     tender: Tender | undefined;
   }>;
 }
 
-export async function getCompanyProfile(companyId: string): Promise<CompanyProfile | null> {
-  await wait(250);
-  const apps = applications.filter((a) => a.companyId === companyId);
-  if (apps.length === 0) {
-    // unknown company id — derive a name from the most recent application elsewhere
+function joinUrl(path: string): string {
+  return path.startsWith("http") ? path : `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function getStoredToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
+  } catch {
     return null;
   }
-  const wins = apps.filter((a) => a.status === "Won").length;
+}
+
+export function setStoredSession(user: User, token: string) {
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  localStorage.setItem(TOKEN_STORAGE_KEY, token);
+}
+
+export function clearStoredSession() {
+  localStorage.removeItem(USER_STORAGE_KEY);
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+}
+
+function toNumber(value: string | number | null | undefined): number {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function normalizeStatus(status: string): ApplicationStatus {
+  const normalized = status.trim().toLowerCase();
+  if (normalized === "won") return "Won";
+  if (normalized === "lost") return "Lost";
+  return "Pending";
+}
+
+function normalizeRiskFlags(flags: RiskFlagDto[] | null | undefined): RiskFlag[] {
+  if (!flags?.length) {
+    return [{ severity: "warning", message: "No risk flags returned by backend" }];
+  }
+
+  return flags.map((flag) => ({
+    severity: flag.severity === "critical" ? "critical" : "warning",
+    message: flag.message?.trim() || "Unknown risk indicator",
+    points: typeof flag.points === "number" ? flag.points : undefined,
+    rule: flag.rule,
+  }));
+}
+
+function normalizeApplication(dto: ApplicationDto): Application {
+  return {
+    id: dto.id,
+    tenderId: dto.tenderId,
+    companyId: dto.companyId,
+    companyName: dto.companyName,
+    proposedPrice: toNumber(dto.proposedPrice),
+    productName: dto.productName,
+    productDescription: dto.productDescription,
+    status: normalizeStatus(dto.status),
+    submittedAt: dto.submittedAt,
+  };
+}
+
+function resolveWinnerName(dto: TenderDto): string {
+  const directName = dto.winnerCompanyName ?? dto.winner_company_name;
+  if (directName) return directName;
+
+  const winningBid = dto.bids?.find((bid) => normalizeStatus(bid.status) === "Won");
+  if (winningBid) return winningBid.companyName;
+
+  return dto.winnerCompanyId ?? dto.winner_company_id ?? "—";
+}
+
+function normalizeTender(dto: TenderDto): Tender {
+  const publishedAt = dto.publishedAt ?? dto.createdAt ?? dto.created_at ?? new Date().toISOString();
+
+  return {
+    id: dto.id,
+    title: dto.title,
+    organization: dto.organization,
+    budget: toNumber(dto.budget),
+    averageMarketPrice: toNumber(dto.averageMarketPrice ?? dto.average_market_price),
+    finalPrice: toNumber(dto.finalPrice ?? dto.final_price),
+    participantsCount: dto.participantsCount ?? dto.bids?.length ?? 0,
+    riskScore: dto.riskScore ?? 0,
+    riskLevel: dto.riskLevel ?? "LOW",
+    riskFlags: normalizeRiskFlags(dto.riskFlags),
+    winner: resolveWinnerName(dto),
+    winnerCompanyId: dto.winnerCompanyId ?? dto.winner_company_id ?? null,
+    category: dto.category?.trim() || "General",
+    publishedAt,
+    deadline: dto.deadline,
+    description: dto.description?.trim() || "No description provided.",
+    status: dto.status ?? undefined,
+    reasons: dto.reasons ?? undefined,
+  };
+}
+
+function getErrorMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== "object") return fallback;
+
+  if ("detail" in payload && typeof payload.detail === "string" && payload.detail.trim()) {
+    return payload.detail;
+  }
+
+  if ("error" in payload && typeof payload.error === "string" && payload.error.trim()) {
+    return payload.error;
+  }
+
+  for (const value of Object.values(payload)) {
+    if (typeof value === "string" && value.trim()) return value;
+    if (Array.isArray(value) && typeof value[0] === "string" && value[0].trim()) return value[0];
+  }
+
+  return fallback;
+}
+
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { auth = true, headers, body, ...init } = options;
+  const token = auth ? getStoredToken() : null;
+  const requestHeaders = new Headers(headers);
+
+  if (body !== undefined) {
+    requestHeaders.set("Content-Type", "application/json");
+  }
+  if (token) {
+    requestHeaders.set("Authorization", `Token ${token}`);
+  }
+
+  const response = await fetch(joinUrl(path), {
+    ...init,
+    headers: requestHeaders,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  const contentType = response.headers.get("content-type") ?? "";
+  const payload = contentType.includes("application/json") ? await response.json() : null;
+
+  if (!response.ok) {
+    throw new Error(getErrorMessage(payload, `Request failed with status ${response.status}`));
+  }
+
+  return payload as T;
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+export async function loginUser(login: string, password: string): Promise<{ user: User; token: string }> {
+  const response = await request<AuthResponseDto>("/auth/login", {
+    method: "POST",
+    auth: false,
+    body: { login, password },
+  });
+  return { user: response.user, token: response.token };
+}
+
+export async function getCurrentUser(): Promise<User> {
+  return request<User>("/auth/me");
+}
+
+export async function logoutUser(): Promise<void> {
+  await fetch(joinUrl("/auth/logout"), {
+    method: "POST",
+    headers: getStoredToken() ? { Authorization: `Token ${getStoredToken()}` } : undefined,
+  });
+}
+
+export async function getTenders(): Promise<Tender[]> {
+  const response = await request<TenderDto[]>("/tenders");
+  return response.map(normalizeTender);
+}
+
+export async function getTenderById(id: string): Promise<Tender | undefined> {
+  const response = await request<TenderDto>(`/tenders/${id}`);
+  return normalizeTender(response);
+}
+
+export async function createTender(input: CreateTenderInput): Promise<Tender> {
+  const response = await request<TenderDto>("/tenders", {
+    method: "POST",
+    body: {
+      title: input.title,
+      organization: input.organization,
+      category: input.category.trim(),
+      budget: input.budget.toFixed(2),
+      average_market_price: input.averageMarketPrice.toFixed(2),
+      final_price: "0.00",
+      status: "active",
+      created_at: nowIso(),
+      deadline: new Date(input.deadline).toISOString(),
+    },
+  });
+  return normalizeTender(response);
+}
+
+export async function getApplications(filters?: {
+  companyId?: string;
+  tenderId?: string;
+}): Promise<Application[]> {
+  const params = new URLSearchParams();
+  if (filters?.companyId) params.set("companyId", filters.companyId);
+  if (filters?.tenderId) params.set("tenderId", filters.tenderId);
+
+  const query = params.toString();
+  const response = await request<ApplicationDto[]>(`/applications${query ? `?${query}` : ""}`);
+  return response.map(normalizeApplication);
+}
+
+export async function createApplication(input: CreateApplicationInput): Promise<Application> {
+  const response = await request<ApplicationDto>("/applications", {
+    method: "POST",
+    body: input,
+  });
+  return normalizeApplication(response);
+}
+
+export async function updateApplicationStatus(
+  applicationId: string,
+  status: "Won" | "Lost",
+): Promise<Application> {
+  const response = await request<ApplicationDto>(`/applications/${applicationId}/status`, {
+    method: "PATCH",
+    body: { status: status.toLowerCase() },
+  });
+  return normalizeApplication(response);
+}
+
+export async function getCompanyProfile(companyId: string): Promise<CompanyProfile | null> {
+  const [applications, tenders] = await Promise.all([
+    getApplications({ companyId }),
+    getTenders(),
+  ]);
+
+  let companyName = applications[0]?.companyName;
+
+  if (!companyName) {
+    try {
+      const users = await request<UserListItemDto[]>("/users");
+      companyName = users.find((item) => item.id === companyId)?.name;
+    } catch {
+      companyName = undefined;
+    }
+  }
+
+  if (!companyName && applications.length === 0) return null;
+
+  const wins = applications.filter((application) => application.status === "Won").length;
   return {
     companyId,
-    companyName: apps[0].companyName,
-    totalParticipations: apps.length,
+    companyName: companyName ?? companyId,
+    totalParticipations: applications.length,
     totalWins: wins,
-    winRate: Math.round((wins / apps.length) * 100),
-    history: apps.map((a) => ({
-      application: a,
-      tender: tenders.find((t) => t.id === a.tenderId),
+    winRate: applications.length ? Math.round((wins / applications.length) * 100) : 0,
+    history: applications.map((application) => ({
+      application,
+      tender: tenders.find((tender) => tender.id === application.tenderId),
     })),
   };
 }

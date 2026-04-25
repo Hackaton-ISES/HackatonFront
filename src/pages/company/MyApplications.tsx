@@ -19,15 +19,25 @@ export default function MyApplications() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     if (!user) return;
     setLoading(true);
     Promise.all([getApplications({ companyId: user.id }), getTenders()])
       .then(([a, t]) => {
-        setApps(a);
-        setTenders(t);
+        if (!cancelled) {
+          setApps(a);
+          setTenders(t);
+        }
       })
-      .finally(() => setLoading(false));
-  }, [user?.id]);
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const tenderById = useMemo(() => {
     const map = new Map<string, Tender>();

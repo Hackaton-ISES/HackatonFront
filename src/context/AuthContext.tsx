@@ -1,5 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { mockCredentials } from "@/lib/mockUsers";
+import {
+  clearStoredSession,
+  getCurrentUser,
+  loginUser,
+  logoutUser,
+  setStoredSession,
+} from "@/lib/api";
 import type { User } from "@/types/tender";
 
 interface AuthContextValue {
@@ -11,36 +17,49 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "tender_auth_user";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setUser(JSON.parse(raw));
-    } catch {
-      // ignore
-    }
-    setLoading(false);
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        if (!cancelled) {
+          setUser(currentUser);
+        }
+      } catch {
+        clearStoredSession();
+        if (!cancelled) {
+          setUser(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = async (loginId: string, password: string): Promise<User> => {
-    await new Promise((r) => setTimeout(r, 400));
-    const match = mockCredentials.find(
-      (c) => c.user.login.toLowerCase() === loginId.trim().toLowerCase() && c.password === password,
-    );
-    if (!match) throw new Error("Invalid login or password");
-    setUser(match.user);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(match.user));
-    return match.user;
+    const session = await loginUser(loginId.trim(), password);
+    setStoredSession(session.user, session.token);
+    setUser(session.user);
+    return session.user;
   };
 
   const logout = () => {
+    void logoutUser().catch(() => undefined);
+    clearStoredSession();
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
   };
 
   return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>;
