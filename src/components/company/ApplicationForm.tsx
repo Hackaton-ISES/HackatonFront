@@ -78,6 +78,14 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!tender.id?.trim()) {
+      toast.error("Tender ID is missing for this application");
+      return;
+    }
+    if (!user.id?.trim()) {
+      toast.error("Company ID is missing for this account");
+      return;
+    }
 
     if (expired) {
       toast.error("This tender's deadline has passed");
@@ -107,8 +115,8 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
     try {
       const data = parsed.data;
       await createApplication({
-        tenderId: tender.id,
-        companyId: user.id,
+        tenderId: tender.id.trim(),
+        companyId: user.id.trim(),
         companyName: data.companyName,
         proposedPrice: data.proposedPrice,
         productName: data.productName,

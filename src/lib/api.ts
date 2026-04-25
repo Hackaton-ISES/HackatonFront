@@ -39,6 +39,7 @@ interface RiskFlagDto {
 
 interface TenderDto {
   id: string;
+  external_id?: string | null;
   title: string;
   organization: string;
   category?: string | null;
@@ -92,6 +93,7 @@ interface CompanyDetailDto extends CompanySummaryDto {
     failed_delivery_score: number;
     consecutive_wins_score: number;
     fake_competition_score: number;
+    ai_summary?: string | null;
     analyzed_at?: string;
     reasons?: SuspicionReasonDto[] | null;
   } | null;
@@ -115,8 +117,11 @@ interface RiskStatsDto {
 
 interface ApplicationDto {
   id: string;
+  external_id?: string | null;
   tenderId: string;
+  tender_id?: string | null;
   companyId: string;
+  company_id?: string | null;
   companyName: string;
   proposedPrice: string | number;
   productName: string;
@@ -146,6 +151,15 @@ export interface CreateApplicationInput {
   proposedPrice: number;
   productName: string;
   productDescription: string;
+}
+
+export interface RegisterCompanyInput {
+  companyName: string;
+  username: string;
+  password: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 export interface CompanyProfile extends CompanyDetail {
@@ -208,9 +222,9 @@ function normalizeRiskFlags(flags: RiskFlagDto[] | null | undefined): RiskFlag[]
 
 function normalizeApplication(dto: ApplicationDto): Application {
   return {
-    id: dto.id,
-    tenderId: dto.tenderId,
-    companyId: dto.companyId,
+    id: dto.id || dto.external_id || "",
+    tenderId: dto.tenderId || dto.tender_id || "",
+    companyId: dto.companyId || dto.company_id || "",
     companyName: dto.companyName,
     proposedPrice: toNumber(dto.proposedPrice),
     productName: dto.productName,
@@ -264,6 +278,7 @@ function normalizeCompanyDetail(dto: CompanyDetailDto): CompanyDetail {
           failedDeliveryScore: dto.suspicionAnalysis.failed_delivery_score,
           consecutiveWinsScore: dto.suspicionAnalysis.consecutive_wins_score,
           fakeCompetitionScore: dto.suspicionAnalysis.fake_competition_score,
+          aiSummary: dto.suspicionAnalysis.ai_summary?.trim() || "",
           analyzedAt: dto.suspicionAnalysis.analyzed_at,
           reasons: (dto.suspicionAnalysis.reasons ?? []).map(normalizeSuspicionReason),
         }
@@ -286,7 +301,7 @@ function normalizeTender(dto: TenderDto): Tender {
   const publishedAt = dto.publishedAt ?? dto.createdAt ?? dto.created_at ?? new Date().toISOString();
 
   return {
-    id: dto.id,
+    id: dto.id || dto.external_id || "",
     title: dto.title,
     organization: dto.organization,
     budget: toNumber(dto.budget),
@@ -315,9 +330,13 @@ function getErrorMessage(payload: unknown, fallback: string): string {
     return payload.error;
   }
 
-  for (const value of Object.values(payload)) {
-    if (typeof value === "string" && value.trim()) return value;
-    if (Array.isArray(value) && typeof value[0] === "string" && value[0].trim()) return value[0];
+  for (const [key, value] of Object.entries(payload)) {
+    if (typeof value === "string" && value.trim()) {
+      return `${key}: ${value}`;
+    }
+    if (Array.isArray(value) && typeof value[0] === "string" && value[0].trim()) {
+      return `${key}: ${value[0]}`;
+    }
   }
 
   return fallback;
@@ -366,6 +385,24 @@ export async function loginUser(login: string, password: string): Promise<{ user
 
 export async function getCurrentUser(): Promise<User> {
   return request<User>("/auth/me");
+}
+
+export async function registerCompany(
+  input: RegisterCompanyInput,
+): Promise<{ user: User; token: string }> {
+  const response = await request<AuthResponseDto>("/companies", {
+    method: "POST",
+    auth: false,
+    body: {
+      company_name: input.companyName,
+      username: input.username,
+      password: input.password,
+      email: input.email?.trim() || "",
+      first_name: input.firstName?.trim() || "",
+      last_name: input.lastName?.trim() || "",
+    },
+  });
+  return { user: response.user, token: response.token };
 }
 
 export async function logoutUser(): Promise<void> {

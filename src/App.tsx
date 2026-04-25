@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import Login from "./pages/Login";
+import RegisterCompany from "./pages/RegisterCompany";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
 import MyApplications from "./pages/company/MyApplications";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -34,6 +35,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<RegisterCompany />} />
 
             {/* Authenticated routes share the navbar layout */}
             <Route element={<ProtectedRoute />}>

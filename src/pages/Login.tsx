@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,6 +84,13 @@ export default function Login() {
               {submitting ? <Loader size="sm" /> : "Login"}
             </Button>
           </form>
+
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            Need a company account?{" "}
+            <Link to="/register" className="font-medium text-foreground hover:text-primary">
+              Create one
+            </Link>
+          </div>
 
           <div className="mt-6 border-t border-border pt-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">

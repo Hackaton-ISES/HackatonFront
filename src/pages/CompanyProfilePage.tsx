@@ -137,6 +137,16 @@ export default function CompanyProfilePage() {
             <AnalyticsCard label="Consecutive wins" value={profile.suspicionAnalysis.consecutiveWinsScore} />
             <AnalyticsCard label="Fake competition" value={profile.suspicionAnalysis.fakeCompetitionScore} />
           </div>
+          {profile.suspicionAnalysis.aiSummary && (
+            <div className="border-t border-border p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+                AI Summary
+              </h3>
+              <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                {profile.suspicionAnalysis.aiSummary}
+              </p>
+            </div>
+          )}
         </section>
       )}
 

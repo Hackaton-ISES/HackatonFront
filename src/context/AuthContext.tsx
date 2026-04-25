@@ -3,6 +3,7 @@ import {
   clearStoredSession,
   getCurrentUser,
   loginUser,
+  registerCompany,
   logoutUser,
   setStoredSession,
 } from "@/lib/api";
@@ -11,6 +12,14 @@ import type { User } from "@/types/tender";
 interface AuthContextValue {
   user: User | null;
   login: (login: string, password: string) => Promise<User>;
+  register: (input: {
+    companyName: string;
+    username: string;
+    password: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+  }) => Promise<User>;
   logout: () => void;
   loading: boolean;
 }
@@ -56,13 +65,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return session.user;
   };
 
+  const register = async (input: {
+    companyName: string;
+    username: string;
+    password: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<User> => {
+    const session = await registerCompany(input);
+    setStoredSession(session.user, session.token);
+    setUser(session.user);
+    return session.user;
+  };
+
   const logout = () => {
     void logoutUser().catch(() => undefined);
     clearStoredSession();
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, login, register, logout, loading }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

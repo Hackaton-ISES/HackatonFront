@@ -97,6 +97,7 @@ export interface CompanyDetail extends CompanySummary {
     failedDeliveryScore: number;
     consecutiveWinsScore: number;
     fakeCompetitionScore: number;
+    aiSummary: string;
     analyzedAt?: string;
     reasons: SuspicionReason[];
   };
