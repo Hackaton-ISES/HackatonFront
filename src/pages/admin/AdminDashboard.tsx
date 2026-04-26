@@ -19,8 +19,9 @@ import { AnalyticsCard } from "@/components/common/AnalyticsCard";
 import { LoadingState } from "@/components/dashboard/LoadingState";
 import { RiskDistributionChart } from "@/components/dashboard/RiskDistributionChart";
 import { RiskBadge } from "@/components/dashboard/RiskBadge";
-import { getApplications, getCompanyPage, getSuspicionStats, getTenders } from "@/lib/api";
+import { getCompanyPage, getSuspicionStats } from "@/lib/api";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
+import { compareSuspicionLevelDesc } from "@/lib/utils";
 import type { Application, CompanySummary, RiskLevel, SuspicionStats, Tender } from "@/types/tender";
 
 type SuspicionFilter = "ALL" | RiskLevel;
@@ -59,11 +60,9 @@ function buildInvestigationCase(
   const statsTopId = stats?.topSuspiciousCompanies[0]?.companyId;
   const topCompany =
     companies.find((company) => company.id === statsTopId) ??
-    [...companies].sort((a, b) => {
-      if (b.suspicionScore !== a.suspicionScore) return b.suspicionScore - a.suspicionScore;
-      if (b.failedProjects !== a.failedProjects) return b.failedProjects - a.failedProjects;
-      return b.totalWins - a.totalWins;
-    })[0];
+    [...companies].sort(
+      (a, b) => compareSuspicionLevelDesc(a, b) || b.failedProjects - a.failedProjects || b.totalWins - a.totalWins,
+    )[0];
 
   if (!topCompany) return null;
 
@@ -324,8 +323,6 @@ function Metric({ label, value }: { label: string; value: string }) {
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<CompanySummary[]>([]);
-  const [tenders, setTenders] = useState<Tender[]>([]);
-  const [applications, setApplications] = useState<Application[]>([]);
   const [stats, setStats] = useState<SuspicionStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -340,18 +337,19 @@ export default function AdminDashboard() {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      getCompanyPage({ page: currentPage, pageSize: COMPANIES_PER_PAGE }),
+      getCompanyPage({
+        page: currentPage,
+        pageSize: COMPANIES_PER_PAGE,
+        search,
+        suspicionLevel: levelFilter === "ALL" ? undefined : levelFilter,
+      }),
       getSuspicionStats(),
-      getTenders(),
-      getApplications(),
     ])
-      .then(([companyPage, dashboardStats, loadedTenders, loadedApplications]) => {
+      .then(([companyPage, dashboardStats]) => {
         if (cancelled) return;
         setCompanies(companyPage.items);
         setTotalCompanies(companyPage.total);
         setStats(dashboardStats);
-        setTenders(loadedTenders);
-        setApplications(loadedApplications);
 
         if (!highAlerted.current && dashboardStats.high > 0) {
           toast.error(`${dashboardStats.high} ta yuqori shubhali kompaniya aniqlandi`, {
@@ -371,11 +369,11 @@ export default function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [currentPage]);
+  }, [currentPage, levelFilter, search]);
 
   const investigation = useMemo(
-    () => buildInvestigationCase(companies, stats, tenders, applications),
-    [applications, companies, stats, tenders],
+    () => buildInvestigationCase(companies, stats, [], []),
+    [companies, stats],
   );
 
   const filtered = useMemo(() => {
@@ -386,13 +384,10 @@ export default function AdminDashboard() {
         if (!query) return true;
         return company.name.toLowerCase().includes(query);
       })
-      .sort((a, b) => {
-        if (b.suspicionScore !== a.suspicionScore) return b.suspicionScore - a.suspicionScore;
-        if (b.failedProjects !== a.failedProjects) return b.failedProjects - a.failedProjects;
-        return a.name.localeCompare(b.name);
-      });
+      .sort((a, b) => compareSuspicionLevelDesc(a, b) || b.failedProjects - a.failedProjects);
   }, [companies, levelFilter, search]);
 
+  const pagedCompanies = filtered;
   const totalPages = Math.max(1, Math.ceil(totalCompanies / COMPANIES_PER_PAGE));
 
   useEffect(() => {
@@ -455,7 +450,19 @@ export default function AdminDashboard() {
               {stats.topSuspiciousCompanies.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Shubhali kompaniyalar topilmadi.</p>
               ) : (
-                stats.topSuspiciousCompanies.map((company) => (
+                [...stats.topSuspiciousCompanies]
+                  .sort((a, b) =>
+                    compareSuspicionLevelDesc({
+                      suspicionLevel: a.suspicionLevel,
+                      suspicionScore: a.totalScore,
+                      name: a.companyName,
+                    }, {
+                      suspicionLevel: b.suspicionLevel,
+                      suspicionScore: b.totalScore,
+                      name: b.companyName,
+                    }),
+                  )
+                  .map((company) => (
                   <button
                     key={company.companyId}
                     type="button"
@@ -528,7 +535,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((company) => (
+                  {pagedCompanies.map((company) => (
                     <tr
                       key={company.id}
                       className="border-b border-border last:border-0 transition-colors hover:bg-muted/40"

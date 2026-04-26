@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { getCompanyPage, getSuspicionStats, getTenders } from "@/lib/api";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn, compareSuspicionLevelDesc } from "@/lib/utils";
 import type { CompanySummary, RiskLevel, SuspicionStats, Tender } from "@/types/tender";
 
 type PublicLoadState = "loading" | "ready" | "partial" | "error";
@@ -149,10 +149,7 @@ export default function PublicTransparencyPage() {
   const featuredCompanies = useMemo(
     () =>
       [...companies]
-        .sort((a, b) => {
-          if (b.suspicionScore !== a.suspicionScore) return b.suspicionScore - a.suspicionScore;
-          return b.failedProjects - a.failedProjects;
-        })
+        .sort((a, b) => compareSuspicionLevelDesc(a, b) || b.failedProjects - a.failedProjects)
         .slice(0, 4),
     [companies],
   );

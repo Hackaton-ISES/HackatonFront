@@ -87,6 +87,10 @@ interface CompanySummaryDto {
 }
 
 interface CompanyDetailDto extends CompanySummaryDto {
+  wonTenders?: TenderDto[] | null;
+  won_tenders?: TenderDto[] | null;
+  wonTendersCount?: number | null;
+  won_tenders_count?: number | null;
   suspicionAnalysis?: {
     total_score: number;
     suspicion_level: string;
@@ -296,6 +300,7 @@ function normalizeCompanySummary(dto: CompanySummaryDto): CompanySummary {
 
 function normalizeCompanyDetail(dto: CompanyDetailDto): CompanyDetail {
   const summary = normalizeCompanySummary(dto);
+  const wonTenderDtos = dto.wonTenders ?? dto.won_tenders ?? [];
   return {
     ...summary,
     suspicionAnalysis: dto.suspicionAnalysis
@@ -312,6 +317,7 @@ function normalizeCompanyDetail(dto: CompanyDetailDto): CompanyDetail {
         }
       : undefined,
     reasons: (dto.reasons ?? []).map(normalizeSuspicionReason),
+    wonTenders: wonTenderDtos.map(normalizeTender),
   };
 }
 
@@ -545,10 +551,14 @@ export async function getCompanies(): Promise<CompanySummary[]> {
 export async function getCompanyPage(options?: {
   page?: number;
   pageSize?: number;
+  search?: string;
+  suspicionLevel?: RiskLevel;
 }): Promise<PaginatedList<CompanySummary>> {
   const query = buildQuery({
     page: options?.page,
     page_size: options?.pageSize,
+    search: options?.search?.trim() || undefined,
+    suspicion_level: options?.suspicionLevel,
   });
   const response = await request<CompanySummaryDto[] | PaginatedResponseDto<CompanySummaryDto>>(`/companies${query}`);
   return normalizePaginatedList(response, normalizeCompanySummary);
@@ -670,14 +680,23 @@ export async function updateApplicationStatus(
 }
 
 export async function getCompanyProfile(companyId: string): Promise<CompanyProfile | null> {
-  const [company, applications, tenders] = await Promise.all([
+  const [company, applications] = await Promise.all([
     getCompanyById(companyId),
     getApplications({ companyId }),
-    getTenders(),
   ]);
 
   const wins = applications.filter((application) => application.status === "Won").length;
-  const wonTenders = tenders.filter((tender) => tender.winnerCompanyId === companyId);
+  let fallbackTenders: Tender[] = [];
+  let wonTenders = company?.wonTenders ?? [];
+
+  if (wonTenders.length === 0) {
+    fallbackTenders = await getTenders();
+    wonTenders = fallbackTenders.filter((tender) => tender.winnerCompanyId === companyId);
+  }
+
+  const tenderById = new Map(
+    [...fallbackTenders, ...wonTenders].map((tender) => [tender.id, tender]),
+  );
 
   if (!company && applications.length === 0 && wonTenders.length === 0) return null;
 
@@ -685,7 +704,7 @@ export async function getCompanyProfile(companyId: string): Promise<CompanyProfi
     id: company?.id ?? companyId,
     name: company?.name ?? applications[0]?.companyName ?? companyId,
     totalParticipations: company?.totalParticipations ?? applications.length,
-    totalWins: company?.totalWins ?? wins,
+    totalWins: company?.totalWins ?? Math.max(wins, wonTenders.length),
     completedProjects: company?.completedProjects ?? wonTenders.length,
     failedProjects: company?.failedProjects ?? 0,
     suspicionScore: company?.suspicionScore ?? 0,
@@ -695,11 +714,11 @@ export async function getCompanyProfile(companyId: string): Promise<CompanyProfi
     updatedAt: company?.updatedAt,
     suspicionAnalysis: company?.suspicionAnalysis,
     reasons: company?.reasons ?? [],
-    winRate: applications.length ? Math.round((wins / applications.length) * 100) : 0,
+    winRate: applications.length ? Math.round((Math.max(wins, wonTenders.length) / applications.length) * 100) : 0,
     wonTenders,
     history: applications.map((application) => ({
       application,
-      tender: tenders.find((tender) => tender.id === application.tenderId),
+      tender: tenderById.get(application.tenderId),
     })),
   };
 }

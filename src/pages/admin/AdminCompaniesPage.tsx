@@ -5,6 +5,7 @@ import { AppPagination } from "@/components/common/AppPagination";
 import { LoadingState } from "@/components/dashboard/LoadingState";
 import { RiskBadge } from "@/components/dashboard/RiskBadge";
 import { getCompanyPage } from "@/lib/api";
+import { compareSuspicionLevelDesc } from "@/lib/utils";
 import type { CompanySummary, RiskLevel } from "@/types/tender";
 
 type SuspicionFilter = "ALL" | RiskLevel;
@@ -26,7 +27,12 @@ export default function AdminCompaniesPage() {
     setLoading(true);
     setError(null);
 
-    getCompanyPage({ page: currentPage, pageSize: COMPANIES_PER_PAGE })
+    getCompanyPage({
+      page: currentPage,
+      pageSize: COMPANIES_PER_PAGE,
+      search,
+      suspicionLevel: levelFilter === "ALL" ? undefined : levelFilter,
+    })
       .then((companyPage) => {
         if (cancelled) return;
         setCompanies(companyPage.items);
@@ -42,7 +48,7 @@ export default function AdminCompaniesPage() {
     return () => {
       cancelled = true;
     };
-  }, [currentPage]);
+  }, [currentPage, levelFilter, search]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -55,13 +61,10 @@ export default function AdminCompaniesPage() {
           company.id.toLowerCase().includes(query)
         );
       })
-      .sort((a, b) => {
-        if (b.suspicionScore !== a.suspicionScore) return b.suspicionScore - a.suspicionScore;
-        if (b.failedProjects !== a.failedProjects) return b.failedProjects - a.failedProjects;
-        return a.name.localeCompare(b.name);
-      });
+      .sort((a, b) => compareSuspicionLevelDesc(a, b) || b.failedProjects - a.failedProjects);
   }, [companies, levelFilter, search]);
 
+  const pagedCompanies = filtered;
   const totalPages = Math.max(1, Math.ceil(totalCompanies / COMPANIES_PER_PAGE));
 
   useEffect(() => {
@@ -156,7 +159,7 @@ export default function AdminCompaniesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((company) => (
+                  {pagedCompanies.map((company) => (
                     <tr
                       key={company.id}
                       className="border-b border-border last:border-0 transition-colors hover:bg-muted/40"

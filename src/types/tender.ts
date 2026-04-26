@@ -102,6 +102,7 @@ export interface CompanyDetail extends CompanySummary {
     reasons: SuspicionReason[];
   };
   reasons: SuspicionReason[];
+  wonTenders?: Tender[];
 }
 
 export interface SuspicionStats {
