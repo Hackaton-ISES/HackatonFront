@@ -67,6 +67,15 @@ export default function CompanyDashboard() {
     setOpen(true);
   };
 
+  const handleApplicationCreated = (application: Application) => {
+    setApplications((current) => {
+      if (current.some((item) => item.id === application.id || item.tenderId === application.tenderId)) {
+        return current;
+      }
+      return [application, ...current];
+    });
+  };
+
   return (
     <main className="container py-8">
       <div className="mb-6">
@@ -119,7 +128,7 @@ export default function CompanyDashboard() {
         tender={selected}
         open={open}
         onOpenChange={setOpen}
-        onSuccess={loadData}
+        onSuccess={handleApplicationCreated}
       />
     </main>
   );

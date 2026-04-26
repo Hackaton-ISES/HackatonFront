@@ -32,6 +32,9 @@ interface AuditReportDialogProps {
   participants: Application[];
   selectedWinner: Application | null;
   reviewsByApplicationId: Record<string, ParticipantAuditReview>;
+  auditTargetId?: string | null;
+  approvedAuditIds?: Set<string>;
+  onApproveAudit?: (applicationId: string) => void;
 }
 
 const recommendationLabels: Record<AwardRecommendation, string> = {
@@ -103,12 +106,17 @@ export function AuditReportDialog({
   participants,
   selectedWinner,
   reviewsByApplicationId,
+  auditTargetId,
+  approvedAuditIds,
+  onApproveAudit,
 }: AuditReportDialogProps) {
   const generatedAt = new Date();
   const cheapestParticipant = getCheapestParticipant(participants);
   const highestRiskParticipant = getHighestRiskParticipant(participants, reviewsByApplicationId);
-  const reportSubject = selectedWinner ?? highestRiskParticipant ?? cheapestParticipant;
+  const auditTarget = auditTargetId ? participants.find((participant) => participant.id === auditTargetId) ?? null : null;
+  const reportSubject = auditTarget ?? selectedWinner ?? highestRiskParticipant ?? cheapestParticipant;
   const subjectReview = reportSubject ? reviewsByApplicationId[reportSubject.id] : undefined;
+  const subjectAuditApproved = reportSubject ? Boolean(approvedAuditIds?.has(reportSubject.id)) : false;
   const auditRequiredCount = participants.filter(
     (participant) => reviewsByApplicationId[participant.id]?.recommendation === "audit",
   ).length;
@@ -230,6 +238,35 @@ export function AuditReportDialog({
                     </p>
                     <p className="mt-2 text-sm leading-6 text-foreground">{recommendedAction}</p>
                   </div>
+
+                  {reportSubject && subjectReview?.recommendation === "audit" && (
+                    <div className="rounded-lg border border-risk-high-border bg-risk-high-bg p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-semibold text-risk-high">
+                            {subjectAuditApproved ? "Audit tasdiqlangan" : "Audit tasdig'i kerak"}
+                          </p>
+                          <p className="mt-1 text-sm text-risk-high/90">
+                            {subjectAuditApproved
+                              ? "Ushbu kompaniya bo'yicha audit ko'rib chiqildi va g'olib sifatida tanlashga ruxsat berildi."
+                              : "Hisobotni ko'rib chiqqandan keyin admin audit tasdig'ini berishi mumkin."}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant={subjectAuditApproved ? "secondary" : "default"}
+                          disabled={subjectAuditApproved}
+                          onClick={() => {
+                            onApproveAudit?.(reportSubject.id);
+                            onOpenChange(false);
+                          }}
+                          className="shrink-0"
+                        >
+                          {subjectAuditApproved ? "Tasdiqlangan" : "Auditni tasdiqlash"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

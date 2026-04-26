@@ -18,13 +18,13 @@ import { createApplication } from "@/lib/api";
 import { daysUntil } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { Tender } from "@/types/tender";
+import type { Application, Tender } from "@/types/tender";
 
 interface ApplicationFormProps {
   tender: Tender | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: (tenderId: string) => void;
+  onSuccess?: (application: Application) => void;
 }
 
 const applicationSchema = z.object({
@@ -114,7 +114,7 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
     setSubmitting(true);
     try {
       const data = parsed.data;
-      await createApplication({
+      const application = await createApplication({
         tenderId: tender.id.trim(),
         companyId: user.id.trim(),
         companyName: data.companyName,
@@ -127,7 +127,7 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
       });
       reset();
       onOpenChange(false);
-      onSuccess?.(tender.id);
+      onSuccess?.(application);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Yuborib bo'lmadi");
     } finally {

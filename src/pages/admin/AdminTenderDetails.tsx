@@ -86,6 +86,7 @@ function buildParticipantRiskReview(
   const priceDelta = getPriceDelta(application, tender);
   const reasons: string[] = [];
   let riskPoints = 0;
+  let requiresAudit = false;
 
   if (!company) {
     reasons.push("Kompaniya profili mavjud emas");
@@ -94,6 +95,7 @@ function buildParticipantRiskReview(
     if (company.suspicionLevel === "HIGH") {
       reasons.push("Kompaniya shubha darajasi yuqori");
       riskPoints += 4;
+      requiresAudit = true;
     } else if (company.suspicionLevel === "MEDIUM") {
       reasons.push("Kompaniya shubha darajasi o'rta");
       riskPoints += 2;
@@ -133,7 +135,7 @@ function buildParticipantRiskReview(
   return {
     company,
     priceDelta,
-    recommendation: riskPoints >= 5 ? "audit" : riskPoints >= 2 ? "review" : "safe",
+    recommendation: requiresAudit ? "audit" : riskPoints >= 2 ? "review" : "safe",
     reasons,
   };
 }
@@ -146,6 +148,8 @@ export default function AdminTenderDetails() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [auditTargetId, setAuditTargetId] = useState<string | null>(null);
+  const [approvedAuditIds, setApprovedAuditIds] = useState<Set<string>>(new Set());
 
   const loadData = async (tenderId: string) => {
     const [t, p] = await Promise.all([getTenderById(tenderId), getApplications({ tenderId })]);
@@ -231,7 +235,7 @@ export default function AdminTenderDetails() {
     }
 
     const review = participantRiskReviews[appId];
-    if (review?.recommendation === "audit") {
+    if (review?.recommendation === "audit" && !approvedAuditIds.has(appId)) {
       toast.error("Bu kompaniyani g'olib qilishdan oldin audit kerak", {
         description: review.reasons.slice(0, 2).join(" · "),
       });
@@ -305,7 +309,10 @@ export default function AdminTenderDetails() {
             {participants.length > 0 && (
               <button
                 type="button"
-                onClick={() => setReportOpen(true)}
+                onClick={() => {
+                  setAuditTargetId(null);
+                  setReportOpen(true);
+                }}
                 className="inline-flex items-center gap-2 rounded-md bg-primary-foreground/10 px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/15"
               >
                 <FileText className="h-4 w-4" />
@@ -425,7 +432,7 @@ export default function AdminTenderDetails() {
                   const isSelectedWinner = selectedWinner?.id === p.id;
                   const review = participantRiskReviews[p.id];
                   const companyRisk = review?.company;
-                  const blocked = review?.recommendation === "audit";
+                  const blocked = review?.recommendation === "audit" && !approvedAuditIds.has(p.id);
                   return (
                     <tr
                       key={p.id}
@@ -524,13 +531,15 @@ export default function AdminTenderDetails() {
                           <button
                             type="button"
                             onClick={() => {
-                              toast.error("Auditsiz g'olib qilmang", {
+                              setAuditTargetId(p.id);
+                              setReportOpen(true);
+                              toast.error("Yuqori xavfli kompaniya uchun audit kerak", {
                                 description: review.reasons.slice(0, 2).join(" · "),
                               });
                             }}
                             className="rounded-md border border-risk-high-border bg-risk-high-bg px-3 py-1.5 text-xs font-medium text-risk-high"
                           >
-                            Audit kerak
+                            Audit hisobotini ochish
                           </button>
                         ) : (
                           <button
@@ -558,6 +567,14 @@ export default function AdminTenderDetails() {
         participants={participants}
         selectedWinner={selectedWinner}
         reviewsByApplicationId={winnerReviewData}
+        auditTargetId={auditTargetId}
+        approvedAuditIds={approvedAuditIds}
+        onApproveAudit={(applicationId) => {
+          setApprovedAuditIds((current) => new Set(current).add(applicationId));
+          toast.success("Audit tasdiqlandi", {
+            description: "Endi ushbu kompaniyani g'olib sifatida tasdiqlash mumkin.",
+          });
+        }}
       />
     </main>
   );

@@ -128,11 +128,16 @@ interface ApplicationDto {
   companyId: string;
   company_id?: string | null;
   companyName: string;
+  company_name?: string | null;
   proposedPrice: string | number;
+  proposed_price?: string | number | null;
   productName: string;
+  product_name?: string | null;
   productDescription: string;
+  product_description?: string | null;
   status: string;
   submittedAt: string;
+  submitted_at?: string | null;
 }
 
 interface RequestOptions extends Omit<RequestInit, "body"> {
@@ -257,12 +262,12 @@ function normalizeApplication(dto: ApplicationDto): Application {
     id: dto.id || dto.external_id || "",
     tenderId: dto.tenderId || dto.tender_id || "",
     companyId: dto.companyId || dto.company_id || "",
-    companyName: dto.companyName,
-    proposedPrice: toNumber(dto.proposedPrice),
-    productName: dto.productName,
-    productDescription: dto.productDescription,
+    companyName: dto.companyName || dto.company_name || "",
+    proposedPrice: toNumber(dto.proposedPrice ?? dto.proposed_price),
+    productName: dto.productName || dto.product_name || "",
+    productDescription: dto.productDescription || dto.product_description || "",
     status: normalizeStatus(dto.status),
-    submittedAt: dto.submittedAt,
+    submittedAt: dto.submittedAt || dto.submitted_at || nowIso(),
   };
 }
 
@@ -663,8 +668,22 @@ export async function getApplicationPage(filters?: {
 export async function createApplication(input: CreateApplicationInput): Promise<Application> {
   const response = await request<ApplicationDto>("/applications", {
     method: "POST",
-    body: input,
+    body: {
+      tenderId: input.tenderId,
+      companyId: input.companyId,
+      companyName: input.companyName,
+      proposedPrice: input.proposedPrice,
+      productName: input.productName,
+      productDescription: input.productDescription,
+      tender_id: input.tenderId,
+      company_id: input.companyId,
+      company_name: input.companyName,
+      proposed_price: input.proposedPrice,
+      product_name: input.productName,
+      product_description: input.productDescription,
+    },
   });
+  clearApiCache();
   return normalizeApplication(response);
 }
 
