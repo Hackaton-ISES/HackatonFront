@@ -18,7 +18,7 @@ export default function AdminCreateTender() {
   }) => {
     const selectedDeadline = new Date(values.deadline);
     if (selectedDeadline.getTime() <= Date.now()) {
-      toast.error("Deadline must be later than the current time");
+      toast.error("Muddat hozirgi vaqtdan keyin bo'lishi kerak");
       return;
     }
 
@@ -26,10 +26,10 @@ export default function AdminCreateTender() {
       const t = await createTender({
         ...values,
       });
-      toast.success("Tender created");
+      toast.success("Tender yaratildi");
       navigate(`/admin/tenders/${t.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create tender");
+      toast.error(err instanceof Error ? err.message : "Tender yaratib bo'lmadi");
     }
   };
 
@@ -40,13 +40,13 @@ export default function AdminCreateTender() {
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to dashboard
+        Tenderlarga qaytish
       </Link>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Create tender</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Tender yaratish</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Publish a new public procurement tender for companies to review and apply to.
+          Kompaniyalar ko'rishi va ariza yuborishi uchun yangi davlat xaridi tenderini e'lon qiling.
         </p>
       </div>
 
@@ -59,8 +59,8 @@ export default function AdminCreateTender() {
           averageMarketPrice: "",
           deadline: "",
         }}
-        submitLabel="Create tender"
-        submittingLabel="Creating tender..."
+        submitLabel="Tender yaratish"
+        submittingLabel="Tender yaratilmoqda..."
         onSubmit={handleSubmit}
         onCancel={() => navigate("/admin/tenders")}
       />

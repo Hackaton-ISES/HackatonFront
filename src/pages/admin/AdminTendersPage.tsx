@@ -78,9 +78,9 @@ export default function AdminTendersPage() {
     <main className="container py-8 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Tenders</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Tenderlar</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage published tenders, update open tenders, and finalize a winner when bidding is complete.
+            E'lon qilingan tenderlarni boshqaring, ochiq tenderlarni yangilang va arizalar yakunlanganda g'olibni tasdiqlang.
           </p>
         </div>
         <Link
@@ -88,38 +88,38 @@ export default function AdminTendersPage() {
           className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           <FilePlus2 className="h-4 w-4" />
-          Create tender
+          Tender yaratish
         </Link>
       </div>
 
       <section className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
         <div className="p-5 border-b border-border space-y-4">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-base font-semibold text-foreground">Tender Management</h2>
+            <h2 className="text-base font-semibold text-foreground">Tenderlarni boshqarish</h2>
             <span className="text-xs text-muted-foreground font-mono">
-              {filtered.length} of {totalTenders}
+              {filtered.length} / {totalTenders}
             </span>
           </div>
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by title, organization, or tender ID..."
+            placeholder="Nomi, tashkilot yoki tender ID bo'yicha qidirish..."
             className="max-w-xl"
           />
         </div>
 
         {loading ? (
           <div className="py-20">
-            <Loader label="Loading tenders…" />
+            <Loader label="Tenderlar yuklanmoqda..." />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
             <div className="rounded-full bg-muted p-4 mb-4">
               <FileSearch className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">No tenders found</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-1">Tender topilmadi</h3>
             <p className="text-sm text-muted-foreground max-w-sm">
-              Try adjusting the search query or create a new tender.
+              Qidiruvni o'zgartiring yoki yangi tender yarating.
             </p>
           </div>
         ) : (
@@ -132,22 +132,22 @@ export default function AdminTendersPage() {
                       Tender
                     </th>
                     <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Organization
+                      Tashkilot
                     </th>
                     <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Budget
+                      Byudjet
                     </th>
                     <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Deadline
+                      Muddat
                     </th>
                     <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Winner
+                      G'olib
                     </th>
                     <th className="py-3 px-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      State
+                      Holat
                     </th>
                     <th className="py-3 pl-3 pr-6 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Actions
+                      Amallar
                     </th>
                   </tr>
                 </thead>
@@ -181,11 +181,11 @@ export default function AdminTendersPage() {
                           {locked ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
                               <Lock className="h-3 w-3" />
-                              Locked
+                              Qulflangan
                             </span>
                           ) : (
                             <span className="inline-flex items-center rounded-full bg-risk-medium-bg px-2.5 py-1 text-xs font-medium text-risk-medium">
-                              Open
+                              Ochiq
                             </span>
                           )}
                         </td>
@@ -198,7 +198,7 @@ export default function AdminTendersPage() {
                                 className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
-                                Edit
+                                Tahrirlash
                               </button>
                             )}
                             <button
@@ -206,7 +206,7 @@ export default function AdminTendersPage() {
                               onClick={() => navigate(`/admin/tenders/${tender.id}`)}
                               className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
                             >
-                              View
+                              Ko'rish
                             </button>
                           </div>
                         </td>
@@ -218,7 +218,7 @@ export default function AdminTendersPage() {
             </div>
             <div className="space-y-2 px-6 pb-6">
               <p className="text-center text-xs text-muted-foreground">
-                Page {currentPage} of {totalPages} · {totalTenders} tender{totalTenders === 1 ? "" : "s"}
+                {currentPage}/{totalPages}-sahifa · {totalTenders} ta tender
               </p>
               <AppPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             </div>

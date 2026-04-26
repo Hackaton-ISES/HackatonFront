@@ -15,6 +15,12 @@ const statusStyles: Record<ApplicationStatus, string> = {
   Lost: "bg-risk-high-bg text-risk-high border-risk-high-border",
 };
 
+const statusLabels: Record<ApplicationStatus, string> = {
+  Pending: "Kutilmoqda",
+  Won: "Yutdi",
+  Lost: "Yutqazdi",
+};
+
 export default function MyApplications() {
   const { user } = useAuth();
   const [apps, setApps] = useState<Application[]>([]);
@@ -65,20 +71,20 @@ export default function MyApplications() {
   return (
     <main className="container py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">My applications</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Arizalarim</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Track the status of every tender you have applied to.
+          Yuborgan arizalaringiz holatini kuzating.
         </p>
       </div>
 
       <section className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
         {loading ? (
           <div className="py-20">
-            <Loader label="Loading applications…" />
+            <Loader label="Arizalar yuklanmoqda..." />
           </div>
         ) : apps.length === 0 ? (
           <div className="py-20 text-center">
-            <p className="text-sm text-muted-foreground">You haven't applied to any tenders yet.</p>
+            <p className="text-sm text-muted-foreground">Hali hech qanday tenderga ariza yubormagansiz.</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -90,13 +96,13 @@ export default function MyApplications() {
                       Tender
                     </th>
                     <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Submitted price
+                      Taklif narxi
                     </th>
                     <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Submitted
+                      Yuborilgan sana
                     </th>
                     <th className="py-3 pl-3 pr-6 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Status
+                      Holat
                     </th>
                   </tr>
                 </thead>
@@ -127,7 +133,7 @@ export default function MyApplications() {
                               statusStyles[a.status],
                             )}
                           >
-                            {a.status}
+                            {statusLabels[a.status]}
                           </span>
                         </td>
                       </tr>
@@ -138,7 +144,7 @@ export default function MyApplications() {
             </div>
             <div className="space-y-2 px-6 pb-6">
               <p className="text-center text-xs text-muted-foreground">
-                Page {currentPage} of {totalPages} · {totalApplications} application{totalApplications === 1 ? "" : "s"}
+                {currentPage}/{totalPages}-sahifa · {totalApplications} ta ariza
               </p>
               <AppPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             </div>

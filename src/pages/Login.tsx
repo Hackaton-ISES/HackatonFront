@@ -18,24 +18,19 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginId.trim() || !password) {
-      toast.error("Please enter login and password");
+      toast.error("Login va parolni kiriting");
       return;
     }
     setSubmitting(true);
     try {
       const u = await login(loginId, password);
-      toast.success(`Welcome, ${u.name}`);
+      toast.success(`Xush kelibsiz, ${u.name}`);
       navigate(u.role === "admin" ? "/admin" : "/company", { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Login failed");
+      toast.error(err instanceof Error ? err.message : "Kirish amalga oshmadi");
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const fillDemo = (id: string, pw: string) => {
-    setLoginId(id);
-    setPassword(pw);
   };
 
   return (
@@ -48,11 +43,11 @@ export default function Login() {
         </div>
         <div className="text-center mb-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-primary-foreground/60 mb-2">
-            Tender Corruption Detection
+            Tenderlarda korrupsiyani aniqlash
           </p>
-          <h1 className="text-2xl font-bold text-primary-foreground">Sign in</h1>
+          <h1 className="text-2xl font-bold text-primary-foreground">Tizimga kirish</h1>
           <p className="text-sm text-primary-foreground/70 mt-1">
-            Access the procurement risk platform.
+            Davlat xaridlari xavf tahlili platformasiga kiring.
           </p>
         </div>
 
@@ -64,13 +59,13 @@ export default function Login() {
                 id="login"
                 value={loginId}
                 onChange={(e) => setLoginId(e.target.value)}
-                placeholder="admin or acme"
+                placeholder="Loginingizni kiriting"
                 autoComplete="username"
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Parol</Label>
               <Input
                 id="password"
                 type="password"
@@ -81,53 +76,21 @@ export default function Login() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? <Loader size="sm" /> : "Login"}
+              {submitting ? <Loader size="sm" /> : "Kirish"}
             </Button>
           </form>
 
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            Need a company account?{" "}
+            Kompaniya akkauntingiz yo'qmi?{" "}
             <Link to="/register" className="font-medium text-foreground hover:text-primary">
-              Create one
+              Ro'yxatdan o'ting
             </Link>
           </div>
 
           <div className="mt-3 text-center text-sm">
             <Link to="/public" className="font-medium text-foreground hover:text-primary">
-              View public transparency monitor
+              Ochiq shaffoflik panelini ko'rish
             </Link>
-          </div>
-
-          <div className="mt-6 border-t border-border pt-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
-              Demo accounts
-            </p>
-            <div className="grid grid-cols-1 gap-1.5 text-xs">
-              <button
-                type="button"
-                onClick={() => fillDemo("admin", "admin123")}
-                className="flex justify-between rounded-md px-3 py-2 bg-muted/50 hover:bg-muted transition-colors text-left"
-              >
-                <span className="font-mono">admin / admin123</span>
-                <span className="text-muted-foreground">Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemo("acme", "acme123")}
-                className="flex justify-between rounded-md px-3 py-2 bg-muted/50 hover:bg-muted transition-colors text-left"
-              >
-                <span className="font-mono">acme / acme123</span>
-                <span className="text-muted-foreground">Company</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemo("nova", "nova123")}
-                className="flex justify-between rounded-md px-3 py-2 bg-muted/50 hover:bg-muted transition-colors text-left"
-              >
-                <span className="font-mono">nova / nova123</span>
-                <span className="text-muted-foreground">Company</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>

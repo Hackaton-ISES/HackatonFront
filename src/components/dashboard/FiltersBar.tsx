@@ -40,7 +40,7 @@ export function FiltersBar({
       <div className="relative flex-1 min-w-0">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search by tender title..."
+          placeholder="Tender nomi bo'yicha qidirish..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9 bg-card h-10"
@@ -52,22 +52,22 @@ export function FiltersBar({
         onValueChange={(v) => onRiskFilterChange(v as RiskFilter)}
       >
         <SelectTrigger className="w-full md:w-[170px] h-10 bg-card">
-          <SelectValue placeholder="Risk level" />
+          <SelectValue placeholder="Xavf darajasi" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="ALL">All risk levels</SelectItem>
-          <SelectItem value="LOW">🟢 Low</SelectItem>
-          <SelectItem value="MEDIUM">🟡 Medium</SelectItem>
-          <SelectItem value="HIGH">🔴 High</SelectItem>
+          <SelectItem value="ALL">Barcha xavf darajalari</SelectItem>
+          <SelectItem value="LOW">🟢 Past</SelectItem>
+          <SelectItem value="MEDIUM">🟡 O'rta</SelectItem>
+          <SelectItem value="HIGH">🔴 Yuqori</SelectItem>
         </SelectContent>
       </Select>
 
       <Select value={organization} onValueChange={onOrganizationChange}>
         <SelectTrigger className="w-full md:w-[240px] h-10 bg-card">
-          <SelectValue placeholder="Organization" />
+          <SelectValue placeholder="Tashkilot" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="ALL">All organizations</SelectItem>
+          <SelectItem value="ALL">Barcha tashkilotlar</SelectItem>
           {organizations.map((org) => (
             <SelectItem key={org} value={org}>
               {org}
@@ -84,7 +84,7 @@ export function FiltersBar({
           className="h-10 px-3 text-muted-foreground hover:text-foreground"
         >
           <X className="h-4 w-4 mr-1" />
-          Clear
+          Tozalash
         </Button>
       )}
     </div>

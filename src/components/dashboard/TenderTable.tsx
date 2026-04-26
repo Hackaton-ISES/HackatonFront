@@ -14,9 +14,9 @@ export function TenderTable({ tenders, onSelect }: TenderTableProps) {
         <div className="rounded-full bg-muted p-4 mb-4">
           <FileSearch className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold text-foreground mb-1">No tenders found</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-1">Tender topilmadi</h3>
         <p className="text-sm text-muted-foreground max-w-sm">
-          Try adjusting your filters or search query to find what you're looking for.
+          Kerakli tenderni topish uchun filter yoki qidiruvni o'zgartiring.
         </p>
       </div>
     );
@@ -31,19 +31,19 @@ export function TenderTable({ tenders, onSelect }: TenderTableProps) {
               Tender
             </th>
             <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Organization
+              Tashkilot
             </th>
             <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Budget
+              Byudjet
             </th>
             <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Final Price
+              Yakuniy narx
             </th>
             <th className="py-3 px-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Bidders
+              Ishtirokchilar
             </th>
             <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Risk
+              Xavf
             </th>
             <th className="py-3 pl-3 pr-6 w-8"></th>
           </tr>

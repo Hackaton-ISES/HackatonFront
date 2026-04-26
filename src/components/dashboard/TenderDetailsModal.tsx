@@ -67,19 +67,19 @@ export function TenderDetailsModal({ tender, open, onOpenChange }: TenderDetails
         <div className="p-6 space-y-6">
           {/* Meta grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 border border-border rounded-lg p-4 bg-muted/20">
-            <MetaRow icon={Building2} label="Organization" value={tender.organization} />
-            <MetaRow icon={Trophy} label="Winner" value={tender.winner} />
-            <MetaRow icon={Tag} label="Category" value={tender.category} />
-            <MetaRow icon={Calendar} label="Published" value={formatDate(tender.publishedAt)} />
+            <MetaRow icon={Building2} label="Tashkilot" value={tender.organization} />
+            <MetaRow icon={Trophy} label="G'olib" value={tender.winner} />
+            <MetaRow icon={Tag} label="Kategoriya" value={tender.category} />
+            <MetaRow icon={Calendar} label="E'lon qilingan sana" value={formatDate(tender.publishedAt)} />
             <MetaRow
               icon={DollarSign}
-              label="Budget"
+              label="Byudjet"
               value={formatCurrency(tender.budget)}
               valueClassName="font-mono"
             />
             <MetaRow
               icon={TrendingUp}
-              label="Final Price"
+              label="Yakuniy narx"
               value={
                 <span className="flex items-baseline gap-2">
                   <span className="font-mono">{formatCurrency(tender.finalPrice)}</span>
@@ -97,8 +97,8 @@ export function TenderDetailsModal({ tender, open, onOpenChange }: TenderDetails
             />
             <MetaRow
               icon={Users}
-              label="Participants"
-              value={`${tender.participantsCount} bidder${tender.participantsCount === 1 ? "" : "s"}`}
+              label="Ishtirokchilar"
+              value={`${tender.participantsCount} ta ishtirokchi`}
               valueClassName={tender.participantsCount === 1 ? "text-risk-high" : ""}
             />
           </div>
@@ -107,10 +107,10 @@ export function TenderDetailsModal({ tender, open, onOpenChange }: TenderDetails
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-                Risk Analysis
+                Xavf tahlili
               </h3>
               <span className="text-xs text-muted-foreground">
-                {tender.riskFlags.length} indicator{tender.riskFlags.length === 1 ? "" : "s"}
+                {tender.riskFlags.length} ta indikator
               </span>
             </div>
             <div

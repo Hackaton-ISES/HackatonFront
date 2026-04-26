@@ -23,7 +23,7 @@ export default function RegisterCompany() {
     e.preventDefault();
 
     if (!companyName.trim() || !username.trim() || !password) {
-      toast.error("Please complete the required fields");
+      toast.error("Majburiy maydonlarni to'ldiring");
       return;
     }
 
@@ -37,10 +37,10 @@ export default function RegisterCompany() {
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
       });
-      toast.success(`Account created for ${user.name}`);
+      toast.success(`${user.name} uchun akkaunt yaratildi`);
       navigate("/company", { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Registration failed");
+      toast.error(err instanceof Error ? err.message : "Ro'yxatdan o'tish amalga oshmadi");
     } finally {
       setSubmitting(false);
     }
@@ -54,35 +54,35 @@ export default function RegisterCompany() {
             <Building2 className="h-7 w-7 text-primary-foreground" />
           </div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-primary-foreground/60 mb-2">
-            Company Account
+            Kompaniya akkaunti
           </p>
-          <h1 className="text-2xl font-bold text-primary-foreground">Create company account</h1>
+          <h1 className="text-2xl font-bold text-primary-foreground">Kompaniya akkauntini yaratish</h1>
           <p className="text-sm text-primary-foreground/70 mt-1">
-            Register your company to review tenders and submit applications.
+            Tenderlarni ko'rish va ariza yuborish uchun kompaniyangizni ro'yxatdan o'tkazing.
           </p>
         </div>
 
         <div className="rounded-xl bg-card border border-border shadow-lg p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="companyName">Company name *</Label>
+              <Label htmlFor="companyName">Kompaniya nomi *</Label>
               <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="firstName">First name</Label>
+                <Label htmlFor="firstName">Ism</Label>
                 <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="lastName">Last name</Label>
+                <Label htmlFor="lastName">Familiya</Label>
                 <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} />
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="username">Username *</Label>
+                <Label htmlFor="username">Foydalanuvchi nomi *</Label>
                 <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required />
               </div>
               <div className="space-y-1.5">
@@ -92,7 +92,7 @@ export default function RegisterCompany() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password *</Label>
+              <Label htmlFor="password">Parol *</Label>
               <Input
                 id="password"
                 type="password"
@@ -104,14 +104,14 @@ export default function RegisterCompany() {
             </div>
 
             <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? <Loader size="sm" /> : "Create account"}
+              {submitting ? <Loader size="sm" /> : "Akkaunt yaratish"}
             </Button>
           </form>
 
           <div className="mt-6 border-t border-border pt-4 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
+            Akkauntingiz bormi?{" "}
             <Link to="/login" className="font-medium text-foreground hover:text-primary">
-              Sign in
+              Tizimga kiring
             </Link>
           </div>
         </div>

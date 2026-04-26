@@ -70,16 +70,16 @@ export default function CompanyDashboard() {
   return (
     <main className="container py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Available tenders</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Mavjud tenderlar</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Browse public tenders and submit your bid.
+          Ochiq tenderlarni ko'ring va taklifingizni yuboring.
         </p>
       </div>
 
       <div className="relative mb-6 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search tenders…"
+          placeholder="Tenderlarni qidirish..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9 bg-card"
@@ -88,11 +88,11 @@ export default function CompanyDashboard() {
 
       {loading ? (
         <div className="py-20">
-          <Loader label="Loading tenders…" />
+          <Loader label="Tenderlar yuklanmoqda..." />
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-20 text-center text-sm text-muted-foreground">
-          No tenders match your search.
+          Qidiruvingizga mos tender topilmadi.
         </div>
       ) : (
         <div className="space-y-6">
@@ -108,7 +108,7 @@ export default function CompanyDashboard() {
           </section>
           <div className="space-y-2">
             <p className="text-center text-xs text-muted-foreground">
-              Page {currentPage} of {totalPages} · {totalTenders} tender{totalTenders === 1 ? "" : "s"}
+              {currentPage}/{totalPages}-sahifa · {totalTenders} ta tender
             </p>
             <AppPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </div>

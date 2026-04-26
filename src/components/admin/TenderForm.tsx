@@ -32,7 +32,7 @@ interface TenderFormProps {
 export function TenderForm({
   initialValues,
   submitLabel,
-  submittingLabel = "Saving...",
+  submittingLabel = "Saqlanmoqda...",
   onSubmit,
   onCancel,
 }: TenderFormProps) {
@@ -50,20 +50,20 @@ export function TenderForm({
     const numericAverageMarketPrice = Number(averageMarketPrice);
 
     if (!title.trim() || !organization.trim() || !category.trim() || !deadline) {
-      toast.error("Please complete all required fields");
+      toast.error("Majburiy maydonlarni to'ldiring");
       return;
     }
     if (!Number.isFinite(numericBudget) || numericBudget <= 0) {
-      toast.error("Budget must be a positive number");
+      toast.error("Byudjet musbat son bo'lishi kerak");
       return;
     }
     if (!Number.isFinite(numericAverageMarketPrice) || numericAverageMarketPrice <= 0) {
-      toast.error("Average market price must be a positive number");
+      toast.error("O'rtacha bozor narxi musbat son bo'lishi kerak");
       return;
     }
     const selectedDeadline = new Date(deadline);
     if (Number.isNaN(selectedDeadline.getTime())) {
-      toast.error("Deadline must be a valid date and time");
+      toast.error("Muddat to'g'ri sana va vaqt bo'lishi kerak");
       return;
     }
 
@@ -88,11 +88,11 @@ export function TenderForm({
       className="bg-card border border-border rounded-lg p-6 space-y-4 shadow-sm animate-fade-in"
     >
       <div className="space-y-1.5">
-        <Label htmlFor="title">Title *</Label>
+        <Label htmlFor="title">Nomi *</Label>
         <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} required />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="organization">Organization *</Label>
+        <Label htmlFor="organization">Tashkilot *</Label>
         <Input
           id="organization"
           value={organization}
@@ -103,7 +103,7 @@ export function TenderForm({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="budget">Budget (USD) *</Label>
+          <Label htmlFor="budget">Byudjet (USD) *</Label>
           <Input
             id="budget"
             type="number"
@@ -111,12 +111,12 @@ export function TenderForm({
             step="0.01"
             value={budget}
             onChange={(e) => setBudget(e.target.value)}
-            placeholder="e.g. 500000"
+            placeholder="masalan: 500000"
             required
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="averageMarketPrice">Average market price (USD) *</Label>
+          <Label htmlFor="averageMarketPrice">O'rtacha bozor narxi (USD) *</Label>
           <Input
             id="averageMarketPrice"
             type="number"
@@ -124,25 +124,25 @@ export function TenderForm({
             step="0.01"
             value={averageMarketPrice}
             onChange={(e) => setAverageMarketPrice(e.target.value)}
-            placeholder="e.g. 450000"
+            placeholder="masalan: 450000"
             required
           />
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="category">Category *</Label>
+          <Label htmlFor="category">Kategoriya *</Label>
           <Input
             id="category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            placeholder="e.g. Construction, Healthcare"
+            placeholder="masalan: Qurilish, Sog'liqni saqlash"
             maxLength={60}
             required
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="deadline">Deadline *</Label>
+          <Label htmlFor="deadline">Muddat *</Label>
           <Input
             id="deadline"
             type="datetime-local"
@@ -154,7 +154,7 @@ export function TenderForm({
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
-          Cancel
+          Bekor qilish
         </Button>
         <Button type="submit" disabled={submitting} className="min-w-[140px]">
           {submitting ? <Loader size="sm" /> : submitLabel}

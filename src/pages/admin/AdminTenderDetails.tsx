@@ -61,9 +61,15 @@ const recommendationStyles: Record<AwardRecommendation, string> = {
 };
 
 const recommendationLabels: Record<AwardRecommendation, string> = {
-  safe: "Safe",
-  review: "Review",
-  audit: "Do not award without audit",
+  safe: "Xavfsiz",
+  review: "Tekshiruv",
+  audit: "Auditsiz g'olib qilmang",
+};
+
+const statusLabels: Record<Application["status"], string> = {
+  Pending: "Kutilmoqda",
+  Won: "Yutdi",
+  Lost: "Yutqazdi",
 };
 
 function getPriceDelta(application: Application, tender: Tender): number | null {
@@ -82,46 +88,46 @@ function buildParticipantRiskReview(
   let riskPoints = 0;
 
   if (!company) {
-    reasons.push("Company profile unavailable");
+    reasons.push("Kompaniya profili mavjud emas");
     riskPoints += 1;
   } else {
     if (company.suspicionLevel === "HIGH") {
-      reasons.push("High company suspicion level");
+      reasons.push("Kompaniya shubha darajasi yuqori");
       riskPoints += 4;
     } else if (company.suspicionLevel === "MEDIUM") {
-      reasons.push("Medium company suspicion level");
+      reasons.push("Kompaniya shubha darajasi o'rta");
       riskPoints += 2;
     }
 
     if (company.failedProjects > 0) {
-      reasons.push(`${company.failedProjects} previous failed project${company.failedProjects === 1 ? "" : "s"}`);
+      reasons.push(`${company.failedProjects} ta avvalgi muammoli loyiha`);
       riskPoints += company.failedProjects >= 2 ? 3 : 2;
     }
 
     if (company.totalWins >= 5) {
-      reasons.push(`${company.totalWins} previous wins indicate repeated-winner risk`);
+      reasons.push(`${company.totalWins} ta avvalgi g'alaba takroriy g'oliblik xavfini ko'rsatadi`);
       riskPoints += 3;
     } else if (company.totalWins >= 3) {
-      reasons.push(`${company.totalWins} previous wins require pattern review`);
+      reasons.push(`${company.totalWins} ta avvalgi g'alaba qo'shimcha tekshiruv talab qiladi`);
       riskPoints += 2;
     }
   }
 
   if (priceDelta !== null) {
     if (priceDelta >= 25) {
-      reasons.push(`Bid is ${priceDelta}% above baseline`);
+      reasons.push(`Taklif bazadan ${priceDelta}% yuqori`);
       riskPoints += 4;
     } else if (priceDelta >= 10) {
-      reasons.push(`Bid is ${priceDelta}% above baseline`);
+      reasons.push(`Taklif bazadan ${priceDelta}% yuqori`);
       riskPoints += 2;
     } else if (priceDelta <= -30) {
-      reasons.push(`Bid is ${Math.abs(priceDelta)}% below baseline`);
+      reasons.push(`Taklif bazadan ${Math.abs(priceDelta)}% past`);
       riskPoints += 2;
     }
   }
 
   if (reasons.length === 0) {
-    reasons.push("No major award-blocking signals detected");
+    reasons.push("G'oliblikni bloklaydigan jiddiy signal aniqlanmadi");
   }
 
   return {
@@ -220,13 +226,13 @@ export default function AdminTenderDetails() {
     const app = participants.find((p) => p.id === appId);
     if (!app) return;
     if (winnerLocked) {
-      toast.error("Winner has already been finalized for this tender");
+      toast.error("Bu tender bo'yicha g'olib allaqachon tasdiqlangan");
       return;
     }
 
     const review = participantRiskReviews[appId];
     if (review?.recommendation === "audit") {
-      toast.error("Audit required before awarding this company", {
+      toast.error("Bu kompaniyani g'olib qilishdan oldin audit kerak", {
         description: review.reasons.slice(0, 2).join(" · "),
       });
       return;
@@ -243,11 +249,11 @@ export default function AdminTenderDetails() {
       if (id) {
         await loadData(id);
       }
-      toast.success(`Finalized ${app.companyName} as winner`, {
-        description: "All other applications were marked as lost.",
+      toast.success(`${app.companyName} g'olib sifatida tasdiqlandi`, {
+        description: "Boshqa barcha arizalar yutqazgan deb belgilandi.",
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to finalize winner");
+      toast.error(err instanceof Error ? err.message : "G'olibni tasdiqlab bo'lmadi");
     } finally {
       setUpdatingId(null);
     }
@@ -256,7 +262,7 @@ export default function AdminTenderDetails() {
   if (loading) {
     return (
       <main className="container py-20">
-        <Loader label="Loading tender…" />
+        <Loader label="Tender yuklanmoqda..." />
       </main>
     );
   }
@@ -264,9 +270,9 @@ export default function AdminTenderDetails() {
   if (!tender) {
     return (
       <main className="container py-20 text-center">
-        <p className="text-sm text-muted-foreground">Tender not found.</p>
+        <p className="text-sm text-muted-foreground">Tender topilmadi.</p>
         <Link to="/admin/tenders" className="text-sm text-primary underline mt-2 inline-block">
-          Back to tenders
+          Tenderlarga qaytish
         </Link>
       </main>
     );
@@ -279,7 +285,7 @@ export default function AdminTenderDetails() {
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to tenders
+        Tenderlarga qaytish
       </Link>
 
       {/* Header */}
@@ -303,13 +309,13 @@ export default function AdminTenderDetails() {
                 className="inline-flex items-center gap-2 rounded-md bg-primary-foreground/10 px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/15"
               >
                 <FileText className="h-4 w-4" />
-                Generate report
+                Hisobot yaratish
               </button>
             )}
             {winnerLocked ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/10 px-3 py-1.5 text-sm text-primary-foreground/80">
                 <Lock className="h-4 w-4" />
-                Winner locked
+                G'olib qulflangan
               </span>
             ) : (
               <Link
@@ -317,7 +323,7 @@ export default function AdminTenderDetails() {
                 className="inline-flex items-center gap-2 rounded-md bg-primary-foreground/10 px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/15"
               >
                 <Pencil className="h-4 w-4" />
-                Edit tender
+                Tenderni tahrirlash
               </Link>
             )}
           </div>
@@ -338,9 +344,9 @@ export default function AdminTenderDetails() {
               <ShieldAlert className="h-4 w-4 text-risk-medium" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-foreground">Before you award</h2>
+              <h2 className="text-base font-semibold text-foreground">G'olibni tanlashdan oldin</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Review company risk, delivery history, repeated wins, and price anomaly signals before finalizing a winner.
+                G'olibni tasdiqlashdan oldin kompaniya xavfi, yetkazib berish tarixi, takroriy g'alabalar va narx anomaliyalarini tekshiring.
               </p>
             </div>
           </div>
@@ -350,44 +356,44 @@ export default function AdminTenderDetails() {
 
       {/* Meta */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 border border-border rounded-lg p-5 bg-card">
-        <MetaRow icon={Building2} label="Organization" value={tender.organization} />
-        <MetaRow icon={Trophy} label="Winner" value={tender.winner} />
-        <MetaRow icon={Tag} label="Category" value={tender.category} />
-        <MetaRow icon={Calendar} label="Published" value={formatDate(tender.publishedAt)} />
-        <MetaRow icon={Calendar} label="Deadline" value={formatDate(tender.deadline)} />
+        <MetaRow icon={Building2} label="Tashkilot" value={tender.organization} />
+        <MetaRow icon={Trophy} label="G'olib" value={tender.winner} />
+        <MetaRow icon={Tag} label="Kategoriya" value={tender.category} />
+        <MetaRow icon={Calendar} label="E'lon qilingan sana" value={formatDate(tender.publishedAt)} />
+        <MetaRow icon={Calendar} label="Muddat" value={formatDate(tender.deadline)} />
         <MetaRow
           icon={DollarSign}
-          label="Budget"
+          label="Byudjet"
           value={formatCurrency(tender.budget)}
           valueClassName="font-mono"
         />
         <MetaRow
-          label="Final price"
+          label="Yakuniy narx"
           icon={DollarSign}
           value={formatCurrency(tender.finalPrice)}
           valueClassName="font-mono"
         />
         <MetaRow
           icon={Users}
-          label="Participants"
-          value={`${tender.participantsCount} bidder${tender.participantsCount === 1 ? "" : "s"}`}
+          label="Ishtirokchilar"
+          value={`${tender.participantsCount} ta ishtirokchi`}
         />
       </section>
 
       {/* Participants */}
       <section className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="p-5 border-b border-border flex items-baseline justify-between">
-          <h2 className="text-base font-semibold text-foreground">Participants</h2>
+          <h2 className="text-base font-semibold text-foreground">Ishtirokchilar</h2>
           <span className="text-xs text-muted-foreground font-mono">{participants.length}</span>
         </div>
         {winnerLocked && (
           <div className="border-b border-border bg-muted/20 px-5 py-3 text-sm text-muted-foreground">
-            Winner selection is finalized. Application statuses are locked for this tender.
+            G'olib tanlovi tasdiqlangan. Ushbu tenderdagi ariza holatlari qulflangan.
           </div>
         )}
         {participants.length === 0 ? (
           <div className="p-12 text-center text-sm text-muted-foreground">
-            No applications submitted for this tender yet.
+            Bu tenderga hali ariza yuborilmagan.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -395,22 +401,22 @@ export default function AdminTenderDetails() {
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="py-3 pl-6 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Company
+                    Kompaniya
                   </th>
                   <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Proposed price
+                    Taklif narxi
                   </th>
                   <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Product
+                    Mahsulot
                   </th>
                   <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Award risk
+                    G'oliblik xavfi
                   </th>
                   <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Status
+                    Holat
                   </th>
                   <th className="py-3 pl-3 pr-6 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Actions
+                    Amallar
                   </th>
                 </tr>
               </thead>
@@ -437,7 +443,7 @@ export default function AdminTenderDetails() {
                         </Link>
                         {isSelectedWinner && (
                           <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-risk-low-bg text-risk-low px-2 py-0.5 text-[10px] font-medium">
-                            ★ Winner
+                            ★ G'olib
                           </span>
                         )}
                       </td>
@@ -455,7 +461,7 @@ export default function AdminTenderDetails() {
                             )}
                           >
                             {review.priceDelta > 0 ? "+" : ""}
-                            {review.priceDelta}% vs baseline
+                            {review.priceDelta}% bazaga nisbatan
                           </p>
                         )}
                       </td>
@@ -471,7 +477,7 @@ export default function AdminTenderDetails() {
                               />
                             ) : (
                               <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                                Risk unavailable
+                                Xavf ma'lumoti yo'q
                               </span>
                             )}
                             {review && (
@@ -508,23 +514,23 @@ export default function AdminTenderDetails() {
                                 : "bg-risk-medium-bg text-risk-medium border-risk-medium-border",
                           )}
                         >
-                          {p.status}
+                          {statusLabels[p.status]}
                         </span>
                       </td>
                       <td className="py-4 pl-3 pr-6 text-right">
                         {winnerLocked ? (
-                          <span className="text-xs text-muted-foreground">Locked</span>
+                          <span className="text-xs text-muted-foreground">Qulflangan</span>
                         ) : blocked ? (
                           <button
                             type="button"
                             onClick={() => {
-                              toast.error("Do not award without audit", {
+                              toast.error("Auditsiz g'olib qilmang", {
                                 description: review.reasons.slice(0, 2).join(" · "),
                               });
                             }}
                             className="rounded-md border border-risk-high-border bg-risk-high-bg px-3 py-1.5 text-xs font-medium text-risk-high"
                           >
-                            Audit required
+                            Audit kerak
                           </button>
                         ) : (
                           <button
@@ -532,7 +538,7 @@ export default function AdminTenderDetails() {
                             disabled={updatingId !== null}
                             className="rounded-md border border-risk-low-border bg-risk-low-bg px-3 py-1.5 text-xs font-medium text-risk-low transition-all hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
                           >
-                            Finalize as winner
+                            G'olib sifatida tasdiqlash
                           </button>
                         )}
                       </td>

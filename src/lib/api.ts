@@ -14,6 +14,7 @@ import type {
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/+$/, "");
 const USER_STORAGE_KEY = "tender_auth_user";
 const TOKEN_STORAGE_KEY = "tender_auth_token";
+const GET_CACHE_TTL_MS = 30_000;
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
@@ -188,8 +189,16 @@ export interface CompanyProfile extends CompanyDetail {
   }>;
 }
 
+const responseCache = new Map<string, { expiresAt: number; value: unknown }>();
+const inFlightRequests = new Map<string, Promise<unknown>>();
+
 function joinUrl(path: string): string {
   return path.startsWith("http") ? path : `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function clearApiCache() {
+  responseCache.clear();
+  inFlightRequests.clear();
 }
 
 function getStoredToken(): string | null {
@@ -201,11 +210,13 @@ function getStoredToken(): string | null {
 }
 
 export function setStoredSession(user: User, token: string) {
+  clearApiCache();
   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
   localStorage.setItem(TOKEN_STORAGE_KEY, token);
 }
 
 export function clearStoredSession() {
+  clearApiCache();
   localStorage.removeItem(USER_STORAGE_KEY);
   localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
@@ -231,7 +242,7 @@ function normalizeRiskFlags(flags: RiskFlagDto[] | null | undefined): RiskFlag[]
 
   return flags.map((flag) => ({
     severity: flag.severity === "critical" ? "critical" : "warning",
-    message: flag.message?.trim() || "Unknown risk indicator",
+    message: flag.message?.trim() || "Noma'lum xavf indikatori",
     points: typeof flag.points === "number" ? flag.points : undefined,
     rule: flag.rule,
   }));
@@ -330,7 +341,7 @@ function normalizeTender(dto: TenderDto): Tender {
     category: dto.category?.trim() || "General",
     publishedAt,
     deadline: dto.deadline,
-    description: dto.description?.trim() || "No description provided.",
+    description: dto.description?.trim() || "Tavsif kiritilmagan.",
     status: dto.status ?? undefined,
     reasons: dto.reasons ?? undefined,
   };
@@ -363,6 +374,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const { auth = true, headers, body, ...init } = options;
   const token = auth ? getStoredToken() : null;
   const requestHeaders = new Headers(headers);
+  const method = (init.method ?? "GET").toUpperCase();
+  const url = joinUrl(path);
+  const cacheable = method === "GET" && body === undefined;
+  const cacheKey = cacheable ? `${token ?? "public"}:${method}:${url}` : "";
 
   if (body !== undefined) {
     requestHeaders.set("Content-Type", "application/json");
@@ -371,20 +386,56 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     requestHeaders.set("Authorization", `Token ${token}`);
   }
 
-  const response = await fetch(joinUrl(path), {
-    ...init,
-    headers: requestHeaders,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  if (cacheable) {
+    const cached = responseCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value as T;
+    }
 
-  const contentType = response.headers.get("content-type") ?? "";
-  const payload = contentType.includes("application/json") ? await response.json() : null;
-
-  if (!response.ok) {
-    throw new Error(getErrorMessage(payload, `Request failed with status ${response.status}`));
+    const pending = inFlightRequests.get(cacheKey);
+    if (pending) {
+      return pending as Promise<T>;
+    }
   }
 
-  return payload as T;
+  const execute = async (): Promise<T> => {
+    const response = await fetch(url, {
+      ...init,
+      method,
+      headers: requestHeaders,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+
+    const contentType = response.headers.get("content-type") ?? "";
+    const payload = contentType.includes("application/json") ? await response.json() : null;
+
+    if (!response.ok) {
+      throw new Error(getErrorMessage(payload, `Request failed with status ${response.status}`));
+    }
+
+    return payload as T;
+  };
+
+  if (!cacheable) {
+    const payload = await execute();
+    clearApiCache();
+    return payload;
+  }
+
+  const pending = execute()
+    .then((payload) => {
+      responseCache.set(cacheKey, {
+        expiresAt: Date.now() + GET_CACHE_TTL_MS,
+        value: payload,
+      });
+      return payload;
+    })
+    .finally(() => {
+      inFlightRequests.delete(cacheKey);
+    });
+
+  inFlightRequests.set(cacheKey, pending);
+  return pending;
 }
 
 function extractList<T>(payload: T[] | PaginatedResponseDto<T>): T[] {

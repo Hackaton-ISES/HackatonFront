@@ -31,9 +31,9 @@ export function TopRiskyOrgsChart({ tenders }: TopRiskyOrgsChartProps) {
     <div className="bg-card border border-border rounded-lg p-5 shadow-elevation-sm">
       <div className="flex items-baseline justify-between mb-4">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-          Top Risky Organizations
+          Eng xavfli tashkilotlar
         </h3>
-        <span className="text-xs text-muted-foreground">Avg risk score</span>
+        <span className="text-xs text-muted-foreground">O'rtacha xavf bali</span>
       </div>
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
@@ -61,7 +61,7 @@ export function TopRiskyOrgsChart({ tenders }: TopRiskyOrgsChartProps) {
                 borderRadius: "8px",
                 fontSize: "12px",
               }}
-              formatter={(v: number) => [`${v}`, "Avg risk"]}
+              formatter={(v: number) => [`${v}`, "O'rtacha xavf"]}
               labelFormatter={(_, p) => p?.[0]?.payload?.fullOrg ?? ""}
             />
             <Bar dataKey="avg" radius={[0, 6, 6, 0]} barSize={18}>

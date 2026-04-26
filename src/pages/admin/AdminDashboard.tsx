@@ -90,7 +90,7 @@ function buildInvestigationCase(
   if (topCompany.suspicionFlags.length > 0) {
     evidence.push(
       ...topCompany.suspicionFlags.slice(0, 2).map((flag) => ({
-        title: flag.rule ? flag.rule.replace(/_/g, " ") : "Risk rule triggered",
+        title: flag.rule ? flag.rule.replace(/_/g, " ") : "Xavf qoidasi ishga tushdi",
         description: flag.message,
         severity: flag.severity === "critical" ? "high" as const : "medium" as const,
         icon: FileWarning,
@@ -100,11 +100,11 @@ function buildInvestigationCase(
 
   if (priceDelta !== null && Math.abs(priceDelta) >= 10) {
     evidence.push({
-      title: "Price anomaly",
+      title: "Narx anomaliyasi",
       description:
         priceDelta > 0
-          ? `Award value is ${priceDelta}% above the available market or budget baseline.`
-          : `Award value is ${Math.abs(priceDelta)}% below the available market or budget baseline.`,
+          ? `G'olib qiymati bozor yoki byudjet bazasidan ${priceDelta}% yuqori.`
+          : `G'olib qiymati bozor yoki byudjet bazasidan ${Math.abs(priceDelta)}% past.`,
       severity: priceDelta > 20 ? "high" : "medium",
       icon: DollarSign,
     });
@@ -112,8 +112,8 @@ function buildInvestigationCase(
 
   if (topCompany.totalWins >= 3) {
     evidence.push({
-      title: "Repeated winner pattern",
-      description: `${topCompany.name} has won ${topCompany.totalWins} tender${topCompany.totalWins === 1 ? "" : "s"} across ${topCompany.totalParticipations} participation${topCompany.totalParticipations === 1 ? "" : "s"}.`,
+      title: "Takroriy g'oliblik holati",
+      description: `${topCompany.name} ${topCompany.totalParticipations} ta ishtirok ichida ${topCompany.totalWins} ta tender yutgan.`,
       severity: topCompany.totalWins >= 5 ? "high" : "medium",
       icon: Trophy,
     });
@@ -121,8 +121,8 @@ function buildInvestigationCase(
 
   if (topCompany.failedProjects > 0) {
     evidence.push({
-      title: "Delivery risk",
-      description: `${topCompany.failedProjects} failed project${topCompany.failedProjects === 1 ? "" : "s"} found in the company history.`,
+      title: "Yetkazib berish xavfi",
+      description: `Kompaniya tarixida ${topCompany.failedProjects} ta muammoli loyiha topildi.`,
       severity: topCompany.failedProjects >= 2 ? "high" : "medium",
       icon: AlertTriangle,
     });
@@ -130,8 +130,8 @@ function buildInvestigationCase(
 
   if (companyApplications.length >= 3 && wonApplications.length > 0) {
     evidence.push({
-      title: "Participation network",
-      description: `The company appears in ${companyApplications.length} bid record${companyApplications.length === 1 ? "" : "s"}, with ${wonApplications.length} win${wonApplications.length === 1 ? "" : "s"} requiring review.`,
+      title: "Ishtirok tarmog'i",
+      description: `Kompaniya ${companyApplications.length} ta arizada qatnashgan, ${wonApplications.length} ta g'alaba tekshiruv talab qiladi.`,
       severity: "medium",
       icon: Network,
     });
@@ -139,8 +139,8 @@ function buildInvestigationCase(
 
   if (evidence.length === 0) {
     evidence.push({
-      title: "Monitoring case",
-      description: "This company has the highest current suspicion score and should remain under review.",
+      title: "Monitoring holati",
+      description: "Bu kompaniya hozir eng yuqori shubha balliga ega va nazoratda qolishi kerak.",
       severity: topCompany.suspicionLevel === "HIGH" ? "high" : topCompany.suspicionLevel === "MEDIUM" ? "medium" : "low",
       icon: Eye,
     });
@@ -169,9 +169,9 @@ function InvestigationHero({ investigation }: { investigation: InvestigationCase
             <ShieldAlert className="h-5 w-5 text-foreground" />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-foreground">Investigation dashboard</h2>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Tekshiruv paneli</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              No company risk data is available yet. Add companies, tenders, and applications to generate an investigation case.
+              Hozircha kompaniya xavf ma'lumotlari yo'q. Tekshiruv yaratish uchun kompaniya, tender va arizalar qo'shing.
             </p>
           </div>
         </div>
@@ -189,13 +189,13 @@ function InvestigationHero({ investigation }: { investigation: InvestigationCase
           <div className="max-w-3xl">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary-foreground/15 bg-primary-foreground/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
               <Scale className="h-3.5 w-3.5" />
-              Active corruption investigation
+              Faol korrupsiya tekshiruvi
             </div>
             <h2 className="text-3xl font-bold tracking-tight">
-              Suspicious procurement pattern detected
+              Shubhali xarid holati aniqlandi
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-primary-foreground/70">
-              The system selected the highest-risk company and connected it to tender history, award value, and evidence signals for immediate review.
+              Tizim eng xavfli kompaniyani tanlab, uni tender tarixi, g'olib qiymati va dalillar bilan bog'ladi.
             </p>
           </div>
           <RiskBadge
@@ -211,7 +211,7 @@ function InvestigationHero({ investigation }: { investigation: InvestigationCase
         <div className="space-y-5 p-6">
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg border border-border bg-background p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Flagged company</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Belgilangan kompaniya</p>
               <button
                 type="button"
                 onClick={() => navigate(`/companies/${company.id}`)}
@@ -223,22 +223,22 @@ function InvestigationHero({ investigation }: { investigation: InvestigationCase
             </div>
 
             <div className="rounded-lg border border-border bg-background p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Money at risk</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Xavf ostidagi summa</p>
               <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-foreground">
-                {riskValue > 0 ? formatCompactCurrency(riskValue) : "Unknown"}
+                {riskValue > 0 ? formatCompactCurrency(riskValue) : "Noma'lum"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {priceDelta === null ? "No baseline price available" : `${priceDelta > 0 ? "+" : ""}${priceDelta}% vs baseline`}
+                {priceDelta === null ? "Bazaviy narx yo'q" : `${priceDelta > 0 ? "+" : ""}${priceDelta}% bazaga nisbatan`}
               </p>
             </div>
 
             <div className="rounded-lg border border-border bg-background p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Case status</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Holat</p>
               <p className={`mt-2 text-lg font-semibold ${riskTone === "high" ? "text-risk-high" : riskTone === "medium" ? "text-risk-medium" : "text-risk-low"}`}>
-                {company.suspicionLevel === "HIGH" ? "Audit required" : company.suspicionLevel === "MEDIUM" ? "Manual review" : "Monitor"}
+                {company.suspicionLevel === "HIGH" ? "Audit kerak" : company.suspicionLevel === "MEDIUM" ? "Qo'lda tekshiruv" : "Kuzatuv"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {company.totalWins} wins · {company.failedProjects} failed projects
+                {company.totalWins} g'alaba · {company.failedProjects} muammoli loyiha
               </p>
             </div>
           </div>
@@ -246,13 +246,13 @@ function InvestigationHero({ investigation }: { investigation: InvestigationCase
           <div className="rounded-lg border border-border bg-background p-5">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Primary tender</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Asosiy tender</p>
                 <h3 className="mt-1 text-lg font-semibold text-foreground">
-                  {tender?.title ?? winningApplication?.tenderId ?? "No linked tender found"}
+                  {tender?.title ?? winningApplication?.tenderId ?? "Bog'langan tender topilmadi"}
                 </h3>
                 {tender && (
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {tender.organization} · deadline {formatDate(tender.deadline)}
+                    {tender.organization} · muddati {formatDate(tender.deadline)}
                   </p>
                 )}
               </div>
@@ -262,23 +262,23 @@ function InvestigationHero({ investigation }: { investigation: InvestigationCase
                   onClick={() => navigate(`/admin/tenders/${tender.id}`)}
                   className="inline-flex shrink-0 items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
                 >
-                  Open tender
+                  Tenderni ochish
                   <ArrowRight className="h-4 w-4" />
                 </button>
               )}
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Metric label="Budget" value={tender ? formatCurrency(tender.budget) : "Unknown"} />
-              <Metric label="Award / bid" value={formatCurrency(riskValue)} />
-              <Metric label="Participants" value={String(tender?.participantsCount ?? "Unknown")} />
+              <Metric label="Byudjet" value={tender ? formatCurrency(tender.budget) : "Noma'lum"} />
+              <Metric label="G'olib / taklif" value={formatCurrency(riskValue)} />
+              <Metric label="Ishtirokchilar" value={String(tender?.participantsCount ?? "Noma'lum")} />
             </div>
           </div>
         </div>
 
         <div className="border-t border-border bg-muted/20 p-6 lg:border-l lg:border-t-0">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">Evidence trail</h3>
-            <span className="font-mono text-xs text-muted-foreground">{evidence.length} signals</span>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">Dalillar zanjiri</h3>
+            <span className="font-mono text-xs text-muted-foreground">{evidence.length} ta signal</span>
           </div>
           <div className="space-y-3">
             {evidence.map((item) => {
@@ -303,7 +303,7 @@ function InvestigationHero({ investigation }: { investigation: InvestigationCase
             onClick={() => navigate(`/companies/${company.id}`)}
             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Open evidence trail
+            Dalillarni ochish
             <Eye className="h-4 w-4" />
           </button>
         </div>
@@ -354,15 +354,15 @@ export default function AdminDashboard() {
         setApplications(loadedApplications);
 
         if (!highAlerted.current && dashboardStats.high > 0) {
-          toast.error(`${dashboardStats.high} high suspicion compan${dashboardStats.high === 1 ? "y" : "ies"} detected`, {
-            description: "Review company suspicion details in the dashboard below.",
+          toast.error(`${dashboardStats.high} ta yuqori shubhali kompaniya aniqlandi`, {
+            description: "Quyidagi panelda kompaniya shubha tafsilotlarini ko'ring.",
             duration: 6000,
           });
           highAlerted.current = true;
         }
       })
       .catch((e) => {
-        if (!cancelled) setError(e?.message ?? "Failed to load dashboard");
+        if (!cancelled) setError(e?.message ?? "Boshqaruv panelini yuklab bo'lmadi");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -423,10 +423,10 @@ export default function AdminDashboard() {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Company Suspicion Dashboard
+            Kompaniya shubha paneli
           </h1>
           <p className="text-sm text-muted-foreground">
-            Monitor suspicious companies, review backend analysis, and investigate repeated abuse patterns.
+            Shubhali kompaniyalarni kuzating, backend tahlilini ko'ring va takroriy suiiste'mol holatlarini tekshiring.
           </p>
         </div>
       </div>
@@ -434,10 +434,10 @@ export default function AdminDashboard() {
       {!loading && !error && <InvestigationHero investigation={investigation} />}
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up">
-        <AnalyticsCard label="Total companies" value={effectiveStats.total} icon={Layers} hint="Tracked by backend" />
-        <AnalyticsCard label="High suspicion" value={effectiveStats.high} emoji="🔴" accent="high" />
-        <AnalyticsCard label="Medium suspicion" value={effectiveStats.medium} emoji="🟡" accent="medium" />
-        <AnalyticsCard label="Low suspicion" value={effectiveStats.low} emoji="🟢" accent="low" />
+        <AnalyticsCard label="Jami kompaniyalar" value={effectiveStats.total} icon={Layers} hint="Backend kuzatuvida" />
+        <AnalyticsCard label="Yuqori shubha" value={effectiveStats.high} emoji="🔴" accent="high" />
+        <AnalyticsCard label="O'rta shubha" value={effectiveStats.medium} emoji="🟡" accent="medium" />
+        <AnalyticsCard label="Past shubha" value={effectiveStats.low} emoji="🟢" accent="low" />
       </section>
 
       {!loading && stats && (
@@ -447,13 +447,13 @@ export default function AdminDashboard() {
           <div className="bg-card border border-border rounded-lg p-5 shadow-elevation-sm">
             <div className="flex items-baseline justify-between mb-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-                Top Suspicious Companies
+                Eng shubhali kompaniyalar
               </h3>
-              <span className="text-xs text-muted-foreground">Highest scores</span>
+              <span className="text-xs text-muted-foreground">Eng yuqori ballar</span>
             </div>
             <div className="space-y-3">
               {stats.topSuspiciousCompanies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No suspicious companies found.</p>
+                <p className="text-sm text-muted-foreground">Shubhali kompaniyalar topilmadi.</p>
               ) : (
                 stats.topSuspiciousCompanies.map((company) => (
                   <button
@@ -478,16 +478,16 @@ export default function AdminDashboard() {
       <section className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
         <div className="p-5 border-b border-border space-y-4">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-base font-semibold text-foreground">Companies Suspicion List</h2>
+            <h2 className="text-base font-semibold text-foreground">Kompaniyalar shubha ro'yxati</h2>
             <span className="text-xs text-muted-foreground font-mono">
-              {filtered.length} of {totalCompanies}
+              {filtered.length} / {totalCompanies}
             </span>
           </div>
           <div className="flex flex-col gap-3 md:flex-row">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search company name..."
+              placeholder="Kompaniya nomini qidirish..."
               className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-sm"
             />
             <div className="flex rounded-md border border-input bg-background p-1">
@@ -498,7 +498,7 @@ export default function AdminDashboard() {
                   onClick={() => setLevelFilter(level)}
                   className={`rounded px-3 py-1.5 text-sm ${levelFilter === level ? "bg-muted text-foreground" : "text-muted-foreground"}`}
                 >
-                  {level}
+                  {level === "ALL" ? "BARCHASI" : level === "HIGH" ? "YUQORI" : level === "MEDIUM" ? "O'RTA" : "PAST"}
                 </button>
               ))}
             </div>
@@ -511,7 +511,7 @@ export default function AdminDashboard() {
           <div className="p-12 text-center text-sm text-risk-high">{error}</div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center text-sm text-muted-foreground">
-            No companies match the current filters.
+            Joriy filterlarga mos kompaniya topilmadi.
           </div>
         ) : (
           <div className="space-y-6">
@@ -519,11 +519,11 @@ export default function AdminDashboard() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="py-3 pl-6 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Company</th>
-                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Suspicion</th>
-                    <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Wins</th>
-                    <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Failed projects</th>
-                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Top reasons</th>
+                    <th className="py-3 pl-6 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kompaniya</th>
+                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shubha</th>
+                    <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">G'alabalar</th>
+                    <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Muammoli loyihalar</th>
+                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Asosiy sabablar</th>
                     <th className="py-3 pl-3 pr-6 w-8"></th>
                   </tr>
                 </thead>
@@ -543,7 +543,7 @@ export default function AdminDashboard() {
                       <td className="py-4 px-3 text-right font-mono text-sm text-foreground">{company.totalWins}</td>
                       <td className="py-4 px-3 text-right font-mono text-sm text-foreground">{company.failedProjects}</td>
                       <td className="py-4 px-3 text-sm text-muted-foreground">
-                        {company.suspicionFlags.length > 0 ? company.suspicionFlags[0].message : "No suspicion flags"}
+                        {company.suspicionFlags.length > 0 ? company.suspicionFlags[0].message : "Shubha belgilari yo'q"}
                       </td>
                       <td className="py-4 pl-3 pr-6 text-right">
                         <button
@@ -552,7 +552,7 @@ export default function AdminDashboard() {
                           className="inline-flex items-center gap-1 text-sm font-medium text-foreground hover:text-primary"
                         >
                           <AlertTriangle className="h-4 w-4" />
-                          View
+                          Ko'rish
                         </button>
                       </td>
                     </tr>
@@ -562,7 +562,7 @@ export default function AdminDashboard() {
             </div>
             <div className="space-y-2 px-6 pb-6">
               <p className="text-center text-xs text-muted-foreground">
-                Page {currentPage} of {totalPages} · {totalCompanies} compan{totalCompanies === 1 ? "y" : "ies"}
+                {currentPage}/{totalPages}-sahifa · {totalCompanies} ta kompaniya
               </p>
               <AppPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             </div>

@@ -8,7 +8,7 @@ export function LoadingState() {
         <span className="absolute h-9 w-9 rounded-full border border-primary/20" />
         <Loader2 className="relative h-8 w-8 text-primary animate-spin" />
       </div>
-      <p className="text-sm font-medium text-muted-foreground">Loading data...</p>
+      <p className="text-sm font-medium text-muted-foreground">Ma'lumotlar yuklanmoqda...</p>
     </div>
   );
 }

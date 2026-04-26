@@ -1,5 +1,5 @@
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("uz-UZ", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -7,7 +7,7 @@ export function formatCurrency(value: number): string {
 }
 
 export function formatCompactCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("uz-UZ", {
     style: "currency",
     currency: "USD",
     notation: "compact",
@@ -16,7 +16,7 @@ export function formatCompactCurrency(value: number): string {
 }
 
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
+  return new Date(iso).toLocaleDateString("uz-UZ", {
     year: "numeric",
     month: "short",
     day: "numeric",

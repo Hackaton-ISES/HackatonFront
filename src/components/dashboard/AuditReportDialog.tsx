@@ -35,9 +35,9 @@ interface AuditReportDialogProps {
 }
 
 const recommendationLabels: Record<AwardRecommendation, string> = {
-  safe: "Safe",
-  review: "Review required",
-  audit: "Audit required",
+  safe: "Xavfsiz",
+  review: "Tekshiruv kerak",
+  audit: "Audit kerak",
 };
 
 const recommendationStyles: Record<AwardRecommendation, string> = {
@@ -120,12 +120,12 @@ export function AuditReportDialog({
 
   const recommendedAction =
     subjectReview?.recommendation === "audit"
-      ? "Pause award finalization and request manual audit approval."
+      ? "G'olibni tasdiqlashni to'xtating va qo'lda audit tasdig'ini so'rang."
       : subjectReview?.recommendation === "review"
-        ? "Require procurement officer review before final award."
+        ? "Yakuniy g'oliblikdan oldin xarid mas'uli tekshiruvi kerak."
         : selectedWinner
-          ? "Award may proceed if supporting documents are complete."
-          : "Select a winner only after comparing risk and price signals.";
+          ? "Tasdiqlovchi hujjatlar to'liq bo'lsa, g'oliblik davom etishi mumkin."
+          : "G'olibni faqat xavf va narx signallarini solishtirgandan keyin tanlang.";
 
   const handlePrint = () => {
     window.print();
@@ -140,9 +140,9 @@ export function AuditReportDialog({
               <FileText className="h-4 w-4 text-foreground" />
             </span>
             <div>
-              <DialogTitle>Audit Report</DialogTitle>
+              <DialogTitle>Audit hisoboti</DialogTitle>
               <DialogDescription>
-                Generated evidence summary for procurement review.
+                Xarid tekshiruvi uchun shakllantirilgan dalillar xulosasi.
               </DialogDescription>
             </div>
           </div>
@@ -153,32 +153,31 @@ export function AuditReportDialog({
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Case summary
+                  Holat xulosasi
                 </p>
                 <h2 className="mt-1 text-xl font-bold tracking-tight text-foreground">{tender.title}</h2>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-                  {tender.organization} procurement case generated for audit review on{" "}
-                  {generatedAt.toLocaleString("en-US", {
+                  {tender.organization} xarid holati audit tekshiruvi uchun{" "}
+                  {generatedAt.toLocaleString("uz-UZ", {
                     year: "numeric",
                     month: "short",
                     day: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
-                  })}
-                  .
+                  })} sanasida yaratildi.
                 </p>
               </div>
               <Button type="button" variant="outline" onClick={handlePrint} className="shrink-0">
                 <Printer className="mr-2 h-4 w-4" />
-                Print report
+                Hisobotni chop etish
               </Button>
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <ReportMetric label="Tender ID" value={tender.id} />
-              <ReportMetric label="Budget" value={formatCurrency(tender.budget)} />
-              <ReportMetric label="Baseline" value={formatCurrency(baseline)} />
-              <ReportMetric label="Deadline" value={formatDate(tender.deadline)} />
+              <ReportMetric label="Byudjet" value={formatCurrency(tender.budget)} />
+              <ReportMetric label="Baza" value={formatCurrency(baseline)} />
+              <ReportMetric label="Muddat" value={formatDate(tender.deadline)} />
             </div>
           </section>
 
@@ -186,16 +185,16 @@ export function AuditReportDialog({
             <div className="rounded-lg border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-2">
                 <Scale className="h-4 w-4 text-foreground" />
-                <h3 className="font-semibold text-foreground">Award Decision Review</h3>
+                <h3 className="font-semibold text-foreground">G'olib qarori tahlili</h3>
               </div>
 
               {!reportSubject ? (
-                <p className="text-sm text-muted-foreground">No participant data is available for this report.</p>
+                <p className="text-sm text-muted-foreground">Ushbu hisobot uchun ishtirokchi ma'lumoti mavjud emas.</p>
               ) : (
                 <div className="space-y-4">
                   <div className="rounded-lg border border-border bg-background p-4">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {selectedWinner ? "Selected winner" : "Highest-risk participant"}
+                      {selectedWinner ? "Tanlangan g'olib" : "Eng xavfli ishtirokchi"}
                     </p>
                     <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
@@ -206,11 +205,11 @@ export function AuditReportDialog({
                           {reportSubject.companyName}
                         </Link>
                         <p className="mt-1 font-mono text-sm text-muted-foreground">
-                          Bid: {formatCurrency(reportSubject.proposedPrice)}
+                          Taklif: {formatCurrency(reportSubject.proposedPrice)}
                           {subjectReview?.priceDelta !== null && subjectReview?.priceDelta !== undefined && (
                             <span className={cn("ml-2", subjectReview.priceDelta >= 10 ? "text-risk-high" : "text-muted-foreground")}>
                               {subjectReview.priceDelta > 0 ? "+" : ""}
-                              {subjectReview.priceDelta}% vs baseline
+                              {subjectReview.priceDelta}% bazaga nisbatan
                             </span>
                           )}
                         </p>
@@ -221,13 +220,13 @@ export function AuditReportDialog({
 
                   {selectedIsNotCheapest && (
                     <div className="rounded-lg border border-risk-medium-border bg-risk-medium-bg p-4 text-sm text-risk-medium">
-                      Selected winner is not the cheapest bid. This should be justified in the procurement record.
+                      Tanlangan g'olib eng arzon taklif emas. Bu xarid yozuvida asoslanishi kerak.
                     </div>
                   )}
 
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Recommended action
+                      Tavsiya etilgan amal
                     </p>
                     <p className="mt-2 text-sm leading-6 text-foreground">{recommendedAction}</p>
                   </div>
@@ -238,12 +237,12 @@ export function AuditReportDialog({
             <div className="rounded-lg border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-2">
                 <ClipboardList className="h-4 w-4 text-foreground" />
-                <h3 className="font-semibold text-foreground">Report Findings</h3>
+                <h3 className="font-semibold text-foreground">Hisobot natijalari</h3>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-md border border-border bg-background p-3 text-center">
                   <p className="font-mono text-xl font-bold text-foreground">{participants.length}</p>
-                  <p className="text-xs text-muted-foreground">Participants</p>
+                  <p className="text-xs text-muted-foreground">Ishtirokchilar</p>
                 </div>
                 <div className="rounded-md border border-risk-high-border bg-risk-high-bg p-3 text-center">
                   <p className="font-mono text-xl font-bold text-risk-high">{auditRequiredCount}</p>
@@ -251,7 +250,7 @@ export function AuditReportDialog({
                 </div>
                 <div className="rounded-md border border-risk-medium-border bg-risk-medium-bg p-3 text-center">
                   <p className="font-mono text-xl font-bold text-risk-medium">{reviewRequiredCount}</p>
-                  <p className="text-xs text-risk-medium">Review</p>
+                  <p className="text-xs text-risk-medium">Tekshiruv</p>
                 </div>
               </div>
 
@@ -259,19 +258,19 @@ export function AuditReportDialog({
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Cheapest bid</span>
+                  <span className="text-muted-foreground">Eng arzon taklif</span>
                   <span className="font-medium text-foreground">
-                    {cheapestParticipant ? cheapestParticipant.companyName : "Unavailable"}
+                    {cheapestParticipant ? cheapestParticipant.companyName : "Mavjud emas"}
                   </span>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Highest risk</span>
+                  <span className="text-muted-foreground">Eng yuqori xavf</span>
                   <span className="font-medium text-foreground">
-                    {highestRiskParticipant ? highestRiskParticipant.companyName : "Unavailable"}
+                    {highestRiskParticipant ? highestRiskParticipant.companyName : "Mavjud emas"}
                   </span>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Final price</span>
+                  <span className="text-muted-foreground">Yakuniy narx</span>
                   <span className="font-mono font-medium text-foreground">{formatCurrency(tender.finalPrice || 0)}</span>
                 </div>
               </div>
@@ -280,9 +279,9 @@ export function AuditReportDialog({
 
           <section className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-5">
-              <h3 className="font-semibold text-foreground">Evidence Trail</h3>
+              <h3 className="font-semibold text-foreground">Dalillar zanjiri</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Participant-level risk signals used by the award review.
+                G'oliblik tahlilida ishlatilgan ishtirokchi darajasidagi xavf signallari.
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -290,16 +289,16 @@ export function AuditReportDialog({
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="py-3 pl-5 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Company
+                      Kompaniya
                     </th>
                     <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Bid
+                      Taklif
                     </th>
                     <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Verdict
+                      Xulosa
                     </th>
                     <th className="py-3 pl-3 pr-5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Evidence
+                      Dalil
                     </th>
                   </tr>
                 </thead>
@@ -319,11 +318,11 @@ export function AuditReportDialog({
                           {review ? (
                             <RecommendationBadge recommendation={review.recommendation} />
                           ) : (
-                            <span className="text-xs text-muted-foreground">Unavailable</span>
+                            <span className="text-xs text-muted-foreground">Mavjud emas</span>
                           )}
                         </td>
                         <td className="py-4 pl-3 pr-5 text-sm text-muted-foreground">
-                          {review?.reasons.length ? review.reasons.slice(0, 3).join("; ") : "No risk details available."}
+                          {review?.reasons.length ? review.reasons.slice(0, 3).join("; ") : "Xavf tafsilotlari mavjud emas."}
                         </td>
                       </tr>
                     );

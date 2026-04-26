@@ -14,7 +14,7 @@ export function ProtectedRoute({ role }: ProtectedRouteProps) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader label="Loading session…" />
+        <Loader label="Sessiya yuklanmoqda..." />
       </div>
     );
   }

@@ -31,22 +31,22 @@ const applicationSchema = z.object({
   companyName: z
     .string()
     .trim()
-    .min(1, "This field is required")
-    .max(100, "Must be less than 100 characters"),
+    .min(1, "Bu maydon majburiy")
+    .max(100, "100 belgidan kam bo'lishi kerak"),
   proposedPrice: z
-    .number({ invalid_type_error: "Price must be a number" })
-    .positive("Price must be greater than 0")
-    .max(1_000_000_000, "Price is unrealistically high"),
+    .number({ invalid_type_error: "Narx raqam bo'lishi kerak" })
+    .positive("Narx 0 dan katta bo'lishi kerak")
+    .max(1_000_000_000, "Narx juda katta ko'rinmoqda"),
   productName: z
     .string()
     .trim()
-    .min(1, "This field is required")
-    .max(120, "Must be less than 120 characters"),
+    .min(1, "Bu maydon majburiy")
+    .max(120, "120 belgidan kam bo'lishi kerak"),
   productDescription: z
     .string()
     .trim()
-    .min(1, "This field is required")
-    .max(1000, "Must be less than 1000 characters"),
+    .min(1, "Bu maydon majburiy")
+    .max(1000, "1000 belgidan kam bo'lishi kerak"),
 });
 
 type FieldErrors = Partial<Record<keyof z.infer<typeof applicationSchema>, string>>;
@@ -79,16 +79,16 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
     e.preventDefault();
     if (!user) return;
     if (!tender.id?.trim()) {
-      toast.error("Tender ID is missing for this application");
+      toast.error("Ushbu ariza uchun tender ID topilmadi");
       return;
     }
     if (!user.id?.trim()) {
-      toast.error("Company ID is missing for this account");
+      toast.error("Ushbu akkaunt uchun kompaniya ID topilmadi");
       return;
     }
 
     if (expired) {
-      toast.error("This tender's deadline has passed");
+      toast.error("Ushbu tender muddati tugagan");
       return;
     }
 
@@ -106,7 +106,7 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
         if (key && !fieldErrors[key]) fieldErrors[key] = issue.message;
       }
       setErrors(fieldErrors);
-      toast.error("Please fix the errors before submitting");
+      toast.error("Yuborishdan oldin xatolarni tuzating");
       return;
     }
 
@@ -122,14 +122,14 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
         productName: data.productName,
         productDescription: data.productDescription,
       });
-      toast.success("You successfully applied to the tender", {
+      toast.success("Tenderga ariza muvaffaqiyatli yuborildi", {
         description: tender.title,
       });
       reset();
       onOpenChange(false);
       onSuccess?.(tender.id);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit");
+      toast.error(err instanceof Error ? err.message : "Yuborib bo'lmadi");
     } finally {
       setSubmitting(false);
     }
@@ -139,7 +139,7 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Apply to tender</DialogTitle>
+          <DialogTitle>Tenderga ariza yuborish</DialogTitle>
           <DialogDescription className="line-clamp-2">{tender.title}</DialogDescription>
           <div className="pt-1">
             <CountdownTimer deadline={tender.deadline} />
@@ -148,14 +148,14 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
 
         {expired && (
           <div className="rounded-md border border-risk-high-border bg-risk-high-bg p-3 text-sm text-risk-high">
-            🚫 This tender has expired and no longer accepts applications.
+            Bu tender muddati tugagan va endi arizalar qabul qilinmaydi.
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2" noValidate>
           <Field
             id="companyName"
-            label="Company name"
+            label="Kompaniya nomi"
             error={errors.companyName}
           >
             <Input
@@ -169,7 +169,7 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
 
           <Field
             id="price"
-            label="Proposed price (USD)"
+            label="Taklif qilingan narx (USD)"
             error={errors.proposedPrice}
           >
             <Input
@@ -179,14 +179,14 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
               step="0.01"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder="e.g. 1200000"
+              placeholder="masalan: 1200000"
               aria-invalid={!!errors.proposedPrice}
             />
           </Field>
 
           <Field
             id="productName"
-            label="Product / service name"
+            label="Mahsulot / xizmat nomi"
             error={errors.productName}
           >
             <Input
@@ -200,7 +200,7 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
 
           <Field
             id="productDescription"
-            label="Product description"
+            label="Mahsulot tavsifi"
             error={errors.productDescription}
           >
             <Textarea
@@ -220,10 +220,10 @@ export function ApplicationForm({ tender, open, onOpenChange, onSuccess }: Appli
               onClick={() => onOpenChange(false)}
               disabled={submitting}
             >
-              Cancel
+              Bekor qilish
             </Button>
             <Button type="submit" disabled={submitting || expired} className="min-w-[100px]">
-              {submitting ? <Loader size="sm" /> : "Submit"}
+              {submitting ? <Loader size="sm" /> : "Yuborish"}
             </Button>
           </div>
         </form>

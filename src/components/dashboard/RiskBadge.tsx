@@ -22,6 +22,12 @@ const dotStyles: Record<RiskLevel, string> = {
   HIGH: "fill-risk-high text-risk-high",
 };
 
+const levelLabels: Record<RiskLevel, string> = {
+  LOW: "PAST",
+  MEDIUM: "O'RTA",
+  HIGH: "YUQORI",
+};
+
 const sizeStyles = {
   sm: "text-xs px-2 py-0.5 gap-1",
   md: "text-sm px-2.5 py-1 gap-1.5",
@@ -40,7 +46,7 @@ export function RiskBadge({ score, level, size = "md", showLabel = true, classNa
     >
       <Circle className={cn("shrink-0", dotStyles[level], size === "sm" ? "h-2 w-2" : "h-2.5 w-2.5")} />
       <span>{score}</span>
-      {showLabel && <span className="font-sans font-medium opacity-80">· {level}</span>}
+      {showLabel && <span className="font-sans font-medium opacity-80">· {levelLabels[level]}</span>}
     </span>
   );
 }

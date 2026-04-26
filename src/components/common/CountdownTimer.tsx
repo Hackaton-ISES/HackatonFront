@@ -9,9 +9,6 @@ interface CountdownTimerProps {
 
 /**
  * Visual countdown to a tender deadline.
- * - Expired  → muted, "Expired"
- * - <= 14d   → medium-risk colors, urgent
- * - else     → low-risk colors
  */
 export function CountdownTimer({ deadline, className }: CountdownTimerProps) {
   const days = daysUntil(deadline);
@@ -19,10 +16,10 @@ export function CountdownTimer({ deadline, className }: CountdownTimerProps) {
   const urgent = !expired && days <= 14;
 
   const label = expired
-    ? "Expired"
+    ? "Muddati tugagan"
     : days === 0
-      ? "Last day"
-      : `${days} day${days === 1 ? "" : "s"} left`;
+      ? "Oxirgi kun"
+      : `${days} kun qoldi`;
 
   return (
     <span
@@ -35,10 +32,10 @@ export function CountdownTimer({ deadline, className }: CountdownTimerProps) {
             : "bg-risk-low-bg text-risk-low",
         className,
       )}
-      title={expired ? "Deadline has passed" : `Deadline in ${days} days`}
+      title={expired ? "Muddat tugagan" : `Muddatgacha ${days} kun`}
     >
       <Clock className="h-3 w-3" />
-      {expired ? "⏳ Expired" : `⏳ ${label}`}
+      {expired ? "⏳ Muddati tugagan" : `⏳ ${label}`}
     </span>
   );
 }

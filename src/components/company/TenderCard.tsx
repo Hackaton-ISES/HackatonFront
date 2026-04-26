@@ -36,14 +36,14 @@ export function TenderCard({ tender, applied, onApply }: TenderCardProps) {
         </div>
         <div className="flex items-center gap-2 text-foreground/80">
           <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span>Deadline {formatDate(tender.deadline)}</span>
+          <span>Muddati {formatDate(tender.deadline)}</span>
         </div>
       </dl>
 
       <div className="mt-auto">
         {applied ? (
           <Button disabled variant="secondary" className="w-full">
-            ✓ Applied
+            ✓ Ariza yuborilgan
           </Button>
         ) : (
           <Button
@@ -51,7 +51,7 @@ export function TenderCard({ tender, applied, onApply }: TenderCardProps) {
             disabled={expired}
             className="w-full transition-transform hover:scale-[1.01]"
           >
-            {expired ? "Closed" : "Apply"}
+            {expired ? "Yopilgan" : "Ariza yuborish"}
           </Button>
         )}
       </div>

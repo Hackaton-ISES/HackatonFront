@@ -11,13 +11,13 @@ export function Navbar() {
   if (!user) return null;
 
   const adminLinks = [
-    { to: "/admin", label: "Dashboard" },
-    { to: "/admin/tenders", label: "Tenders" },
-    { to: "/admin/companies", label: "Companies" },
+    { to: "/admin", label: "Boshqaruv" },
+    { to: "/admin/tenders", label: "Tenderlar" },
+    { to: "/admin/companies", label: "Kompaniyalar" },
   ];
   const companyLinks = [
-    { to: "/company", label: "Tenders" },
-    { to: "/company/applications", label: "My applications" },
+    { to: "/company", label: "Tenderlar" },
+    { to: "/company/applications", label: "Arizalarim" },
   ];
   const links = user.role === "admin" ? adminLinks : companyLinks;
 
@@ -38,9 +38,9 @@ export function Navbar() {
           </div>
           <div className="flex flex-col leading-tight">
             <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-foreground/60">
-              Tender System
+              Tender tizimi
             </span>
-            <span className="text-sm font-semibold">Risk Detection</span>
+            <span className="text-sm font-semibold">Xavfni aniqlash</span>
           </div>
         </Link>
 
@@ -78,7 +78,7 @@ export function Navbar() {
             className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
           >
             <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Logout</span>
+            <span className="hidden sm:inline">Chiqish</span>
           </Button>
         </div>
       </div>

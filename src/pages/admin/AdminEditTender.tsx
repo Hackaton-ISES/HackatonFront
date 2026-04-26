@@ -47,7 +47,7 @@ export default function AdminEditTender() {
   if (loading) {
     return (
       <main className="container py-20">
-        <Loader label="Loading tender…" />
+        <Loader label="Tender yuklanmoqda..." />
       </main>
     );
   }
@@ -55,9 +55,9 @@ export default function AdminEditTender() {
   if (!tender) {
     return (
       <main className="container py-20 text-center">
-        <p className="text-sm text-muted-foreground">Tender not found.</p>
+        <p className="text-sm text-muted-foreground">Tender topilmadi.</p>
         <Link to="/admin/tenders" className="text-sm text-primary underline mt-2 inline-block">
-          Back to tenders
+          Tenderlarga qaytish
         </Link>
       </main>
     );
@@ -70,7 +70,7 @@ export default function AdminEditTender() {
     e.preventDefault();
     if (!tender) return;
     if (!title.trim() || !organization.trim() || !category.trim()) {
-      toast.error("Please complete all required fields");
+      toast.error("Majburiy maydonlarni to'ldiring");
       return;
     }
 
@@ -87,10 +87,10 @@ export default function AdminEditTender() {
         finalPrice: tender.finalPrice,
         status: tender.status ?? "active",
       });
-      toast.success("Tender updated");
+      toast.success("Tender yangilandi");
       navigate(`/admin/tenders/${updated.id}`, { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update tender");
+      toast.error(err instanceof Error ? err.message : "Tenderni yangilab bo'lmadi");
     } finally {
       setSaving(false);
     }
@@ -103,13 +103,13 @@ export default function AdminEditTender() {
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to tender
+        Tenderga qaytish
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Edit tender</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Tenderni tahrirlash</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Update limited tender details before a winner is finalized.
+          G'olib tasdiqlanishidan oldin tender ma'lumotlarini yangilang.
         </p>
       </div>
 
@@ -120,9 +120,9 @@ export default function AdminEditTender() {
               <Lock className="h-4 w-4 text-foreground" />
             </div>
             <div>
-              <h2 className="font-semibold text-foreground">Tender is locked</h2>
+              <h2 className="font-semibold text-foreground">Tender qulflangan</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                A winner has already been finalized for this tender, so publish-time fields can no longer be changed.
+                Bu tender bo'yicha g'olib allaqachon tasdiqlangan, shuning uchun e'lon ma'lumotlarini o'zgartirib bo'lmaydi.
               </p>
             </div>
           </div>
@@ -133,11 +133,11 @@ export default function AdminEditTender() {
           className="bg-card border border-border rounded-lg p-6 space-y-4 shadow-sm animate-fade-in"
         >
           <div className="space-y-1.5">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title">Nomi *</Label>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} required />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="organization">Organization *</Label>
+            <Label htmlFor="organization">Tashkilot *</Label>
             <Input
               id="organization"
               value={organization}
@@ -147,7 +147,7 @@ export default function AdminEditTender() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="category">Category *</Label>
+            <Label htmlFor="category">Kategoriya *</Label>
             <Input
               id="category"
               value={category}
@@ -158,15 +158,15 @@ export default function AdminEditTender() {
           </div>
 
           <div className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-            Budget, average market price, and deadline are fixed after creation and cannot be edited here.
+            Byudjet, o'rtacha bozor narxi va muddat yaratilgandan keyin o'zgarmaydi.
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => navigate(`/admin/tenders/${tender.id}`)} disabled={saving}>
-              Cancel
+              Bekor qilish
             </Button>
             <Button type="submit" disabled={saving} className="min-w-[140px]">
-              {saving ? "Saving..." : "Save changes"}
+              {saving ? "Saqlanmoqda..." : "O'zgarishlarni saqlash"}
             </Button>
           </div>
         </form>

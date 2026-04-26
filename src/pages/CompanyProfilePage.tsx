@@ -16,6 +16,12 @@ const statusStyles: Record<ApplicationStatus, string> = {
   Lost: "bg-risk-high-bg text-risk-high border-risk-high-border",
 };
 
+const statusLabels: Record<ApplicationStatus, string> = {
+  Pending: "Kutilmoqda",
+  Won: "Yutdi",
+  Lost: "Yutqazdi",
+};
+
 export default function CompanyProfilePage() {
   const { companyId } = useParams<{ companyId: string }>();
   const { user } = useAuth();
@@ -35,7 +41,7 @@ export default function CompanyProfilePage() {
   if (loading) {
     return (
       <main className="container py-20">
-        <Loader label="Loading company profile…" />
+        <Loader label="Kompaniya profili yuklanmoqda..." />
       </main>
     );
   }
@@ -43,9 +49,9 @@ export default function CompanyProfilePage() {
   if (!profile) {
     return (
       <main className="container py-20 text-center">
-        <p className="text-sm text-muted-foreground">Company not found or has no activity yet.</p>
+        <p className="text-sm text-muted-foreground">Kompaniya topilmadi yoki hali faolligi yo'q.</p>
         <Link to={backTo} className="text-sm text-primary underline mt-2 inline-block">
-          Back
+          Qaytish
         </Link>
       </main>
     );
@@ -58,7 +64,7 @@ export default function CompanyProfilePage() {
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back
+        Qaytish
       </Link>
 
       <div className="bg-gradient-header text-primary-foreground p-6 rounded-lg flex items-center gap-4">
@@ -76,24 +82,24 @@ export default function CompanyProfilePage() {
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up">
         <AnalyticsCard
-          label="Total participations"
+          label="Jami ishtiroklar"
           value={profile.totalParticipations}
           icon={Activity}
         />
         <AnalyticsCard
-          label="Total wins"
+          label="Jami g'alabalar"
           value={profile.totalWins}
           icon={Trophy}
           accent="low"
         />
         <AnalyticsCard
-          label="Win rate"
+          label="G'alaba foizi"
           value={`${profile.winRate}%`}
           icon={Target}
           accent={profile.winRate >= 50 ? "low" : profile.winRate >= 25 ? "medium" : "high"}
         />
         <AnalyticsCard
-          label="Failed projects"
+          label="Muammoli loyihalar"
           value={profile.failedProjects}
           icon={AlertTriangle}
           accent={profile.failedProjects > 0 ? "high" : "low"}
@@ -103,21 +109,21 @@ export default function CompanyProfilePage() {
       {profile.suspicionAnalysis && (
         <section className="bg-card border border-border rounded-lg overflow-hidden">
           <div className="p-5 border-b border-border flex items-baseline justify-between">
-            <h2 className="text-base font-semibold text-foreground">Suspicion Breakdown</h2>
+            <h2 className="text-base font-semibold text-foreground">Shubha taqsimoti</h2>
             <span className="text-xs text-muted-foreground font-mono">
-              analyzed {profile.suspicionAnalysis.analyzedAt ? formatDate(profile.suspicionAnalysis.analyzedAt) : "—"}
+              tahlil qilingan sana {profile.suspicionAnalysis.analyzedAt ? formatDate(profile.suspicionAnalysis.analyzedAt) : "—"}
             </span>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-5">
-            <AnalyticsCard label="Price" value={profile.suspicionAnalysis.priceScore} />
-            <AnalyticsCard label="Failed delivery" value={profile.suspicionAnalysis.failedDeliveryScore} />
-            <AnalyticsCard label="Consecutive wins" value={profile.suspicionAnalysis.consecutiveWinsScore} />
-            <AnalyticsCard label="Fake competition" value={profile.suspicionAnalysis.fakeCompetitionScore} />
+            <AnalyticsCard label="Narx" value={profile.suspicionAnalysis.priceScore} />
+            <AnalyticsCard label="Yetkazishdagi muammo" value={profile.suspicionAnalysis.failedDeliveryScore} />
+            <AnalyticsCard label="Ketma-ket g'alabalar" value={profile.suspicionAnalysis.consecutiveWinsScore} />
+            <AnalyticsCard label="Soxta raqobat" value={profile.suspicionAnalysis.fakeCompetitionScore} />
           </div>
           {profile.suspicionAnalysis.aiSummary && (
             <div className="border-t border-border p-5">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-                AI Summary
+                AI xulosasi
               </h3>
               <p className="mt-3 text-sm leading-7 text-muted-foreground">
                 {profile.suspicionAnalysis.aiSummary}
@@ -126,37 +132,11 @@ export default function CompanyProfilePage() {
           )}
         </section>
       )}
-
       <section className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="p-5 border-b border-border flex items-baseline justify-between">
-          <h2 className="text-base font-semibold text-foreground">Suspicion Reasons</h2>
+          <h2 className="text-base font-semibold text-foreground">Yutilgan tenderlar</h2>
           <span className="text-xs text-muted-foreground font-mono">
-            {profile.reasons.length} reason{profile.reasons.length === 1 ? "" : "s"}
-          </span>
-        </div>
-        <div className="p-5 space-y-3">
-          {profile.reasons.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No suspicion reasons found.</p>
-          ) : (
-            profile.reasons.map((reason) => (
-              <div key={reason.id} className="rounded-lg border border-border p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-foreground">{reason.title}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{reason.description}</p>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      <section className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="p-5 border-b border-border flex items-baseline justify-between">
-          <h2 className="text-base font-semibold text-foreground">Won Tenders</h2>
-          <span className="text-xs text-muted-foreground font-mono">
-            {profile.wonTenders.length} tender{profile.wonTenders.length === 1 ? "" : "s"}
+            {profile.wonTenders.length} ta tender
           </span>
         </div>
         <div className="overflow-x-auto">
@@ -167,16 +147,16 @@ export default function CompanyProfilePage() {
                   Tender
                 </th>
                 <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Bid
+                  Taklif
                 </th>
                 <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Submitted
+                  Yuborilgan sana
                 </th>
                 <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Organization
+                  Tashkilot
                 </th>
                 <th className="py-3 pl-3 pr-6 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Final price
+                  Yakuniy narx
                 </th>
               </tr>
             </thead>
@@ -210,9 +190,9 @@ export default function CompanyProfilePage() {
 
       <section className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="p-5 border-b border-border flex items-baseline justify-between">
-          <h2 className="text-base font-semibold text-foreground">Application History</h2>
+          <h2 className="text-base font-semibold text-foreground">Arizalar tarixi</h2>
           <span className="text-xs text-muted-foreground font-mono">
-            {profile.history.length} application{profile.history.length === 1 ? "" : "s"}
+            {profile.history.length} ta ariza
           </span>
         </div>
         <div className="overflow-x-auto">
@@ -223,13 +203,13 @@ export default function CompanyProfilePage() {
                   Tender
                 </th>
                 <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Bid
+                  Taklif
                 </th>
                 <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Submitted
+                  Yuborilgan sana
                 </th>
                 <th className="py-3 pl-3 pr-6 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Status
+                  Holat
                 </th>
               </tr>
             </thead>
@@ -255,7 +235,7 @@ export default function CompanyProfilePage() {
                         statusStyles[application.status],
                       )}
                     >
-                      {application.status}
+                      {statusLabels[application.status]}
                     </span>
                   </td>
                 </tr>

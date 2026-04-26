@@ -7,19 +7,19 @@ interface RiskDistributionChartProps {
 
 export function RiskDistributionChart({ stats }: RiskDistributionChartProps) {
   const data = [
-    { name: "Low", value: stats.low, color: "hsl(var(--risk-low))" },
-    { name: "Medium", value: stats.medium, color: "hsl(var(--risk-medium))" },
-    { name: "High", value: stats.high, color: "hsl(var(--risk-high))" },
+    { name: "Past", value: stats.low, color: "hsl(var(--risk-low))" },
+    { name: "O'rta", value: stats.medium, color: "hsl(var(--risk-medium))" },
+    { name: "Yuqori", value: stats.high, color: "hsl(var(--risk-high))" },
   ].filter((entry) => entry.value > 0);
 
   return (
     <div className="bg-card border border-border rounded-lg p-5 shadow-elevation-sm animate-fade-in">
       <div className="flex items-baseline justify-between mb-4">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-          Suspicion Distribution
+          Shubha taqsimoti
         </h3>
         <span className="text-xs text-muted-foreground font-mono">
-          {stats.totalAnalyzedCompanies} analyzed
+          {stats.totalAnalyzedCompanies} ta tahlil qilingan
         </span>
       </div>
 
@@ -46,7 +46,7 @@ export function RiskDistributionChart({ stats }: RiskDistributionChartProps) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => [`${value}`, "Companies"]}
+              formatter={(value: number) => [`${value}`, "Kompaniyalar"]}
               contentStyle={{
                 backgroundColor: "hsl(var(--popover))",
                 border: "1px solid hsl(var(--border))",
@@ -59,11 +59,11 @@ export function RiskDistributionChart({ stats }: RiskDistributionChartProps) {
 
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-            High Suspicion
+            Yuqori shubha
           </span>
           <span className="mt-1 text-5xl font-bold font-mono text-foreground sm:text-6xl">{stats.high}</span>
           <span className="mt-1 text-xs text-muted-foreground">
-            of {stats.total} companies
+            jami {stats.total} ta kompaniyadan
           </span>
         </div>
       </div>

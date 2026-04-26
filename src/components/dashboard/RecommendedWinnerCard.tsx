@@ -26,9 +26,9 @@ const recommendationRank: Record<AwardRecommendation, number> = {
 };
 
 const recommendationLabels: Record<AwardRecommendation, string> = {
-  safe: "Safe",
-  review: "Review",
-  audit: "Audit required",
+  safe: "Xavfsiz",
+  review: "Tekshiruv",
+  audit: "Audit kerak",
 };
 
 const recommendationStyles: Record<AwardRecommendation, string> = {
@@ -81,7 +81,7 @@ function SummaryCandidate({
       </div>
 
       {!application ? (
-        <p className="text-sm text-muted-foreground">No participant available.</p>
+        <p className="text-sm text-muted-foreground">Ishtirokchi mavjud emas.</p>
       ) : (
         <div>
           <Link
@@ -146,35 +146,35 @@ export function RecommendedWinnerCard({
       <div className="p-5 border-b border-border flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Scale className="h-4 w-4 text-foreground" />
-          <h2 className="text-base font-semibold text-foreground">Winner Risk Review</h2>
+          <h2 className="text-base font-semibold text-foreground">G'olib xavf tahlili</h2>
         </div>
         <span className="text-xs text-muted-foreground">
-          Compares selected winner, cheapest bid, and lowest-risk bid
+          Tanlangan g'olib, eng arzon taklif va eng past xavfli taklif solishtiriladi
         </span>
       </div>
 
       {participants.length === 0 ? (
         <div className="p-12 text-center text-sm text-muted-foreground">
-          No participant bids are available for winner review.
+          G'olib tahlili uchun ishtirokchi takliflari mavjud emas.
         </div>
       ) : (
         <div className="space-y-5 p-5">
           <div className="grid gap-4 lg:grid-cols-3">
             <SummaryCandidate
-              label="Selected winner"
+              label="Tanlangan g'olib"
               application={winner}
               review={winnerReview}
               icon={Trophy}
               muted={!winner}
             />
             <SummaryCandidate
-              label="Cheapest bid"
+              label="Eng arzon taklif"
               application={cheapestBid}
               review={cheapestReview}
               icon={Scale}
             />
             <SummaryCandidate
-              label="Lowest-risk bid"
+              label="Eng past xavfli taklif"
               application={lowestRiskBid}
               review={lowestRiskReview}
               icon={ShieldCheck}
@@ -183,18 +183,18 @@ export function RecommendedWinnerCard({
 
           {!winner ? (
             <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-              No winner has been selected yet. Use this review before finalizing the award.
+              Hali g'olib tanlanmagan. G'olibni tasdiqlashdan oldin ushbu tahlildan foydalaning.
             </div>
           ) : selectedNeedsAudit || selectedIsNotCheapest || selectedIsNotLowestRisk ? (
             <div className="rounded-lg border border-risk-high-border bg-risk-high-bg p-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-risk-high" />
                 <div>
-                  <p className="font-semibold text-risk-high">Selected winner requires explanation</p>
+                  <p className="font-semibold text-risk-high">Tanlangan g'olib izoh talab qiladi</p>
                   <div className="mt-1 space-y-1 text-sm text-risk-high/90">
-                    {selectedNeedsAudit && <p>The selected company is classified as audit required.</p>}
-                    {selectedIsNotCheapest && <p>The selected winner is not the cheapest bid.</p>}
-                    {selectedIsNotLowestRisk && <p>The selected winner is not the lowest-risk bid.</p>}
+                    {selectedNeedsAudit && <p>Tanlangan kompaniya audit talab qiluvchi toifaga kiradi.</p>}
+                    {selectedIsNotCheapest && <p>Tanlangan g'olib eng arzon taklif emas.</p>}
+                    {selectedIsNotLowestRisk && <p>Tanlangan g'olib eng past xavfli taklif emas.</p>}
                   </div>
                 </div>
               </div>
@@ -204,9 +204,9 @@ export function RecommendedWinnerCard({
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-risk-low" />
                 <div>
-                  <p className="font-semibold text-risk-low">Selected winner matches the risk review</p>
+                  <p className="font-semibold text-risk-low">Tanlangan g'olib xavf tahliliga mos</p>
                   <p className="mt-1 text-sm text-risk-low/90">
-                    The selected winner is aligned with the lowest-risk bid and does not require an audit block.
+                    Tanlangan g'olib eng past xavfli taklifga mos va audit blokini talab qilmaydi.
                   </p>
                 </div>
               </div>

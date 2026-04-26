@@ -33,7 +33,7 @@ export default function AdminCompaniesPage() {
         setTotalCompanies(companyPage.total);
       })
       .catch((e) => {
-        if (!cancelled) setError(e?.message ?? "Failed to load companies");
+        if (!cancelled) setError(e?.message ?? "Kompaniyalarni yuklab bo'lmadi");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -81,9 +81,9 @@ export default function AdminCompaniesPage() {
           <Building2 className="h-4 w-4 text-foreground" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Companies</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Kompaniyalar</h1>
           <p className="text-sm text-muted-foreground">
-            Review participating companies, sort by suspicion, and open company profiles for details.
+            Tenderlarda qatnashgan kompaniyalarni ko'ring, xavf darajasi bo'yicha saralang va profilini oching.
           </p>
         </div>
       </div>
@@ -91,16 +91,16 @@ export default function AdminCompaniesPage() {
       <section className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
         <div className="p-5 border-b border-border space-y-4">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-base font-semibold text-foreground">Company Management</h2>
+            <h2 className="text-base font-semibold text-foreground">Kompaniyalarni boshqarish</h2>
             <span className="text-xs text-muted-foreground font-mono">
-              {filtered.length} of {totalCompanies}
+              {filtered.length} / {totalCompanies}
             </span>
           </div>
           <div className="flex flex-col gap-3 md:flex-row">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search company name or ID..."
+              placeholder="Kompaniya nomi yoki ID bo'yicha qidirish..."
               className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-sm"
             />
             <div className="flex rounded-md border border-input bg-background p-1">
@@ -111,7 +111,7 @@ export default function AdminCompaniesPage() {
                   onClick={() => setLevelFilter(level)}
                   className={`rounded px-3 py-1.5 text-sm ${levelFilter === level ? "bg-muted text-foreground" : "text-muted-foreground"}`}
                 >
-                  {level}
+                  {level === "ALL" ? "BARCHASI" : level === "HIGH" ? "YUQORI" : level === "MEDIUM" ? "O'RTA" : "PAST"}
                 </button>
               ))}
             </div>
@@ -124,7 +124,7 @@ export default function AdminCompaniesPage() {
           <div className="p-12 text-center text-sm text-risk-high">{error}</div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center text-sm text-muted-foreground">
-            No companies match the current filters.
+            Joriy filterlarga mos kompaniya topilmadi.
           </div>
         ) : (
           <div className="space-y-6">
@@ -133,25 +133,25 @@ export default function AdminCompaniesPage() {
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="py-3 pl-6 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Company
+                      Kompaniya
                     </th>
                     <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Suspicion
+                      Shubha
                     </th>
                     <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Participations
+                      Ishtiroklar
                     </th>
                     <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Wins
+                      G'alabalar
                     </th>
                     <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Failed projects
+                      Muammoli loyihalar
                     </th>
                     <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Top reasons
+                      Asosiy sabablar
                     </th>
                     <th className="py-3 pl-3 pr-6 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Actions
+                      Amallar
                     </th>
                   </tr>
                 </thead>
@@ -178,7 +178,7 @@ export default function AdminCompaniesPage() {
                         {company.failedProjects}
                       </td>
                       <td className="py-4 px-3 text-sm text-muted-foreground">
-                        {company.suspicionFlags.length > 0 ? company.suspicionFlags[0].message : "No suspicion flags"}
+                        {company.suspicionFlags.length > 0 ? company.suspicionFlags[0].message : "Shubha belgilari yo'q"}
                       </td>
                       <td className="py-4 pl-3 pr-6 text-right">
                         <button
@@ -187,7 +187,7 @@ export default function AdminCompaniesPage() {
                           className="inline-flex items-center gap-1 text-sm font-medium text-foreground hover:text-primary"
                         >
                           <AlertTriangle className="h-4 w-4" />
-                          View
+                          Ko'rish
                         </button>
                       </td>
                     </tr>
@@ -197,7 +197,7 @@ export default function AdminCompaniesPage() {
             </div>
             <div className="space-y-2 px-6 pb-6">
               <p className="text-center text-xs text-muted-foreground">
-                Page {currentPage} of {totalPages} · {totalCompanies} compan{totalCompanies === 1 ? "y" : "ies"}
+                {currentPage}/{totalPages}-sahifa · {totalCompanies} ta kompaniya
               </p>
               <AppPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             </div>
