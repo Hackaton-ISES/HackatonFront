@@ -2,11 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/common/Loader";
+import { AppPagination } from "@/components/common/AppPagination";
 import { TenderCard } from "@/components/company/TenderCard";
 import { ApplicationForm } from "@/components/company/ApplicationForm";
 import { useAuth } from "@/context/AuthContext";
-import { getApplications, getTenders } from "@/lib/api";
+import { getApplications, getTenderPage } from "@/lib/api";
 import type { Application, Tender } from "@/types/tender";
+
+const TENDERS_PER_PAGE = 6;
 
 export default function CompanyDashboard() {
   const { user } = useAuth();
@@ -14,6 +17,8 @@ export default function CompanyDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalTenders, setTotalTenders] = useState(0);
   const [selected, setSelected] = useState<Tender | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -21,8 +26,12 @@ export default function CompanyDashboard() {
     if (!user) return;
     setLoading(true);
     try {
-      const [t, a] = await Promise.all([getTenders(), getApplications({ companyId: user.id })]);
-      setTenders(t);
+      const [tenderPage, a] = await Promise.all([
+        getTenderPage({ page: currentPage, pageSize: TENDERS_PER_PAGE }),
+        getApplications({ companyId: user.id }),
+      ]);
+      setTenders(tenderPage.items);
+      setTotalTenders(tenderPage.total);
       setApplications(a);
     } finally {
       setLoading(false);
@@ -32,7 +41,7 @@ export default function CompanyDashboard() {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, currentPage]);
 
   const appliedIds = useMemo(() => new Set(applications.map((a) => a.tenderId)), [applications]);
 
@@ -40,6 +49,18 @@ export default function CompanyDashboard() {
     const q = search.trim().toLowerCase();
     return tenders.filter((t) => (q ? t.title.toLowerCase().includes(q) : true));
   }, [tenders, search]);
+
+  const totalPages = Math.max(1, Math.ceil(totalTenders / TENDERS_PER_PAGE));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const handleApply = (tender: Tender) => {
     setSelected(tender);
@@ -74,16 +95,24 @@ export default function CompanyDashboard() {
           No tenders match your search.
         </div>
       ) : (
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
-          {filtered.map((t) => (
-            <TenderCard
-              key={t.id}
-              tender={t}
-              applied={appliedIds.has(t.id)}
-              onApply={handleApply}
-            />
-          ))}
-        </section>
+        <div className="space-y-6">
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+            {filtered.map((t) => (
+              <TenderCard
+                key={t.id}
+                tender={t}
+                applied={appliedIds.has(t.id)}
+                onApply={handleApply}
+              />
+            ))}
+          </section>
+          <div className="space-y-2">
+            <p className="text-center text-xs text-muted-foreground">
+              Page {currentPage} of {totalPages} · {totalTenders} tender{totalTenders === 1 ? "" : "s"}
+            </p>
+            <AppPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+          </div>
+        </div>
       )}
 
       <ApplicationForm

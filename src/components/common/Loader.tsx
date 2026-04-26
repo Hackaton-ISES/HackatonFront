@@ -15,9 +15,13 @@ const sizes = {
 
 export function Loader({ label, className, size = "md" }: LoaderProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-3 text-muted-foreground", className)}>
-      <Loader2 className={cn("animate-spin text-primary", sizes[size])} />
-      {label && <p className="text-sm">{label}</p>}
+    <div className={cn("flex flex-col items-center justify-center gap-4 text-muted-foreground", className)}>
+      <div className="relative flex items-center justify-center">
+        <span className="absolute h-12 w-12 rounded-full border border-primary/10 animate-soft-pulse" />
+        <span className="absolute h-8 w-8 rounded-full border border-primary/20" />
+        <Loader2 className={cn("relative animate-spin text-primary drop-shadow-sm", sizes[size])} />
+      </div>
+      {label && <p className="text-sm font-medium tracking-tight animate-fade-in">{label}</p>}
     </div>
   );
 }

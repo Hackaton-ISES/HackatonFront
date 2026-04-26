@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FilePlus2, FileSearch, Lock, Pencil } from "lucide-react";
+import { AppPagination } from "@/components/common/AppPagination";
 import { Loader } from "@/components/common/Loader";
 import { Input } from "@/components/ui/input";
-import { getApplications, getTenders } from "@/lib/api";
+import { getApplications, getTenderPage } from "@/lib/api";
 import { formatCompactCurrency, formatDate } from "@/lib/format";
 import type { Application, Tender } from "@/types/tender";
+
+const TENDERS_PER_PAGE = 6;
 
 export default function AdminTendersPage() {
   const navigate = useNavigate();
@@ -13,13 +16,19 @@ export default function AdminTendersPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalTenders, setTotalTenders] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getTenders(), getApplications()])
-      .then(([loadedTenders, loadedApplications]) => {
+    Promise.all([
+      getTenderPage({ page: currentPage, pageSize: TENDERS_PER_PAGE }),
+      getApplications(),
+    ])
+      .then(([tenderPage, loadedApplications]) => {
         if (cancelled) return;
-        setTenders(loadedTenders);
+        setTenders(tenderPage.items);
+        setTotalTenders(tenderPage.total);
         setApplications(loadedApplications);
       })
       .finally(() => {
@@ -29,7 +38,7 @@ export default function AdminTendersPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [currentPage]);
 
   const winnerByTenderId = useMemo(() => {
     const winners = new Map<string, Application>();
@@ -52,6 +61,18 @@ export default function AdminTendersPage() {
       );
     });
   }, [tenders, search]);
+
+  const totalPages = Math.max(1, Math.ceil(totalTenders / TENDERS_PER_PAGE));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <main className="container py-8 space-y-6">
@@ -76,7 +97,7 @@ export default function AdminTendersPage() {
           <div className="flex items-baseline justify-between">
             <h2 className="text-base font-semibold text-foreground">Tender Management</h2>
             <span className="text-xs text-muted-foreground font-mono">
-              {filtered.length} of {tenders.length}
+              {filtered.length} of {totalTenders}
             </span>
           </div>
           <Input
@@ -102,97 +123,105 @@ export default function AdminTendersPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="py-3 pl-6 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Tender
-                  </th>
-                  <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Organization
-                  </th>
-                  <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Budget
-                  </th>
-                  <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Deadline
-                  </th>
-                  <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Winner
-                  </th>
-                  <th className="py-3 px-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    State
-                  </th>
-                  <th className="py-3 pl-3 pr-6 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((tender) => {
-                  const winner = winnerByTenderId.get(tender.id);
-                  const locked = Boolean(winner) || Boolean(tender.winnerCompanyId);
-                  return (
-                    <tr key={tender.id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                      <td className="py-4 pl-6 pr-3">
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/admin/tenders/${tender.id}`)}
-                          className="text-left"
-                        >
-                          <p className="font-medium text-foreground hover:text-primary">{tender.title}</p>
-                          <p className="text-xs text-muted-foreground font-mono">{tender.id}</p>
-                        </button>
-                      </td>
-                      <td className="py-4 px-3 text-sm text-foreground">{tender.organization}</td>
-                      <td className="py-4 px-3 text-right font-mono text-sm text-foreground">
-                        {formatCompactCurrency(tender.budget)}
-                      </td>
-                      <td className="py-4 px-3 text-sm text-muted-foreground">
-                        {formatDate(tender.deadline)}
-                      </td>
-                      <td className="py-4 px-3 text-sm text-foreground">
-                        {winner?.companyName ?? tender.winner ?? "—"}
-                      </td>
-                      <td className="py-4 px-3 text-center">
-                        {locked ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
-                            <Lock className="h-3 w-3" />
-                            Locked
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full bg-risk-medium-bg px-2.5 py-1 text-xs font-medium text-risk-medium">
-                            Open
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-4 pl-3 pr-6 text-right">
-                        <div className="inline-flex items-center gap-2">
-                          {!locked && (
-                            <button
-                              type="button"
-                              onClick={() => navigate(`/admin/tenders/${tender.id}/edit`)}
-                              className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              Edit
-                            </button>
-                          )}
+          <div className="space-y-6">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="py-3 pl-6 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Tender
+                    </th>
+                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Organization
+                    </th>
+                    <th className="py-3 px-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Budget
+                    </th>
+                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Deadline
+                    </th>
+                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Winner
+                    </th>
+                    <th className="py-3 px-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      State
+                    </th>
+                    <th className="py-3 pl-3 pr-6 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((tender) => {
+                    const winner = winnerByTenderId.get(tender.id);
+                    const locked = Boolean(winner) || Boolean(tender.winnerCompanyId);
+                    return (
+                      <tr key={tender.id} className="border-b border-border last:border-0 hover:bg-muted/40">
+                        <td className="py-4 pl-6 pr-3">
                           <button
                             type="button"
                             onClick={() => navigate(`/admin/tenders/${tender.id}`)}
-                            className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                            className="text-left"
                           >
-                            View
+                            <p className="font-medium text-foreground hover:text-primary">{tender.title}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{tender.id}</p>
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="py-4 px-3 text-sm text-foreground">{tender.organization}</td>
+                        <td className="py-4 px-3 text-right font-mono text-sm text-foreground">
+                          {formatCompactCurrency(tender.budget)}
+                        </td>
+                        <td className="py-4 px-3 text-sm text-muted-foreground">
+                          {formatDate(tender.deadline)}
+                        </td>
+                        <td className="py-4 px-3 text-sm text-foreground">
+                          {winner?.companyName ?? tender.winner ?? "—"}
+                        </td>
+                        <td className="py-4 px-3 text-center">
+                          {locked ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+                              <Lock className="h-3 w-3" />
+                              Locked
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-full bg-risk-medium-bg px-2.5 py-1 text-xs font-medium text-risk-medium">
+                              Open
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 pl-3 pr-6 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            {!locked && (
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/admin/tenders/${tender.id}/edit`)}
+                                className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/admin/tenders/${tender.id}`)}
+                              className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                            >
+                              View
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="space-y-2 px-6 pb-6">
+              <p className="text-center text-xs text-muted-foreground">
+                Page {currentPage} of {totalPages} · {totalTenders} tender{totalTenders === 1 ? "" : "s"}
+              </p>
+              <AppPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+            </div>
           </div>
         )}
       </section>

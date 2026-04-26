@@ -135,6 +135,20 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: JsonValue;
 }
 
+interface PaginatedResponseDto<T> {
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+  results?: T[];
+}
+
+export interface PaginatedList<T> {
+  items: T[];
+  total: number;
+  next: string | null;
+  previous: string | null;
+}
+
 export interface CreateTenderInput {
   title: string;
   organization: string;
@@ -373,6 +387,46 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return payload as T;
 }
 
+function extractList<T>(payload: T[] | PaginatedResponseDto<T>): T[] {
+  if (Array.isArray(payload)) return payload;
+  return payload.results ?? [];
+}
+
+function normalizePaginatedList<TInput, TOutput>(
+  payload: TInput[] | PaginatedResponseDto<TInput>,
+  normalizeItem: (item: TInput) => TOutput,
+): PaginatedList<TOutput> {
+  if (Array.isArray(payload)) {
+    const items = payload.map(normalizeItem);
+    return {
+      items,
+      total: items.length,
+      next: null,
+      previous: null,
+    };
+  }
+
+  const items = (payload.results ?? []).map(normalizeItem);
+  return {
+    items,
+    total: payload.count ?? items.length,
+    next: payload.next ?? null,
+    previous: payload.previous ?? null,
+  };
+}
+
+function buildQuery(params: Record<string, string | number | undefined>): string {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined) return;
+    searchParams.set(key, String(value));
+  });
+
+  const query = searchParams.toString();
+  return query ? `?${query}` : "";
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -416,13 +470,37 @@ export async function logoutUser(): Promise<void> {
 }
 
 export async function getTenders(): Promise<Tender[]> {
-  const response = await request<TenderDto[]>("/tenders");
-  return response.map(normalizeTender);
+  const response = await request<TenderDto[] | PaginatedResponseDto<TenderDto>>("/tenders");
+  return extractList(response).map(normalizeTender);
+}
+
+export async function getTenderPage(options?: {
+  page?: number;
+  pageSize?: number;
+}): Promise<PaginatedList<Tender>> {
+  const query = buildQuery({
+    page: options?.page,
+    page_size: options?.pageSize,
+  });
+  const response = await request<TenderDto[] | PaginatedResponseDto<TenderDto>>(`/tenders${query}`);
+  return normalizePaginatedList(response, normalizeTender);
 }
 
 export async function getCompanies(): Promise<CompanySummary[]> {
-  const response = await request<CompanySummaryDto[]>("/companies");
-  return response.map(normalizeCompanySummary);
+  const response = await request<CompanySummaryDto[] | PaginatedResponseDto<CompanySummaryDto>>("/companies");
+  return extractList(response).map(normalizeCompanySummary);
+}
+
+export async function getCompanyPage(options?: {
+  page?: number;
+  pageSize?: number;
+}): Promise<PaginatedList<CompanySummary>> {
+  const query = buildQuery({
+    page: options?.page,
+    page_size: options?.pageSize,
+  });
+  const response = await request<CompanySummaryDto[] | PaginatedResponseDto<CompanySummaryDto>>(`/companies${query}`);
+  return normalizePaginatedList(response, normalizeCompanySummary);
 }
 
 export async function getCompanyById(companyId: string): Promise<CompanyDetail | null> {
@@ -493,13 +571,32 @@ export async function getApplications(filters?: {
   companyId?: string;
   tenderId?: string;
 }): Promise<Application[]> {
-  const params = new URLSearchParams();
-  if (filters?.companyId) params.set("companyId", filters.companyId);
-  if (filters?.tenderId) params.set("tenderId", filters.tenderId);
+  const query = buildQuery({
+    companyId: filters?.companyId,
+    tenderId: filters?.tenderId,
+  });
+  const response = await request<ApplicationDto[] | PaginatedResponseDto<ApplicationDto>>(
+    `/applications${query}`,
+  );
+  return extractList(response).map(normalizeApplication);
+}
 
-  const query = params.toString();
-  const response = await request<ApplicationDto[]>(`/applications${query ? `?${query}` : ""}`);
-  return response.map(normalizeApplication);
+export async function getApplicationPage(filters?: {
+  companyId?: string;
+  tenderId?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<PaginatedList<Application>> {
+  const query = buildQuery({
+    companyId: filters?.companyId,
+    tenderId: filters?.tenderId,
+    page: filters?.page,
+    page_size: filters?.pageSize,
+  });
+  const response = await request<ApplicationDto[] | PaginatedResponseDto<ApplicationDto>>(
+    `/applications${query}`,
+  );
+  return normalizePaginatedList(response, normalizeApplication);
 }
 
 export async function createApplication(input: CreateApplicationInput): Promise<Application> {

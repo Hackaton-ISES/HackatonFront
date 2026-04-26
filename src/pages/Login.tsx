@@ -92,6 +92,12 @@ export default function Login() {
             </Link>
           </div>
 
+          <div className="mt-3 text-center text-sm">
+            <Link to="/public" className="font-medium text-foreground hover:text-primary">
+              View public transparency monitor
+            </Link>
+          </div>
+
           <div className="mt-6 border-t border-border pt-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
               Demo accounts

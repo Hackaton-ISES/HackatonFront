@@ -2,23 +2,29 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  AlertTriangle,
   Building2,
   Calendar,
+  CheckCircle2,
   DollarSign,
+  FileText,
   Lock,
   Pencil,
+  ShieldAlert,
   Tag,
   Trophy,
   Users,
 } from "lucide-react";
 import { Loader } from "@/components/common/Loader";
+import { AuditReportDialog } from "@/components/dashboard/AuditReportDialog";
 import { RecommendedWinnerCard } from "@/components/dashboard/RecommendedWinnerCard";
+import { RiskBadge } from "@/components/dashboard/RiskBadge";
 import { CountdownTimer } from "@/components/common/CountdownTimer";
-import { getApplications, getTenderById, updateApplicationStatus } from "@/lib/api";
+import { getApplications, getCompanyById, getTenderById, updateApplicationStatus } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { Application, Tender } from "@/types/tender";
+import type { Application, CompanyDetail, Tender } from "@/types/tender";
 
 interface MetaRowProps {
   icon: React.ElementType;
@@ -39,17 +45,118 @@ function MetaRow({ icon: Icon, label, value, valueClassName }: MetaRowProps) {
   );
 }
 
+type AwardRecommendation = "safe" | "review" | "audit";
+
+interface ParticipantRiskReview {
+  company: CompanyDetail | null;
+  priceDelta: number | null;
+  recommendation: AwardRecommendation;
+  reasons: string[];
+}
+
+const recommendationStyles: Record<AwardRecommendation, string> = {
+  safe: "border-risk-low-border bg-risk-low-bg text-risk-low",
+  review: "border-risk-medium-border bg-risk-medium-bg text-risk-medium",
+  audit: "border-risk-high-border bg-risk-high-bg text-risk-high",
+};
+
+const recommendationLabels: Record<AwardRecommendation, string> = {
+  safe: "Safe",
+  review: "Review",
+  audit: "Do not award without audit",
+};
+
+function getPriceDelta(application: Application, tender: Tender): number | null {
+  const baseline = tender.averageMarketPrice || tender.budget;
+  if (!baseline) return null;
+  return Math.round(((application.proposedPrice - baseline) / baseline) * 100);
+}
+
+function buildParticipantRiskReview(
+  application: Application,
+  tender: Tender,
+  company: CompanyDetail | null,
+): ParticipantRiskReview {
+  const priceDelta = getPriceDelta(application, tender);
+  const reasons: string[] = [];
+  let riskPoints = 0;
+
+  if (!company) {
+    reasons.push("Company profile unavailable");
+    riskPoints += 1;
+  } else {
+    if (company.suspicionLevel === "HIGH") {
+      reasons.push("High company suspicion level");
+      riskPoints += 4;
+    } else if (company.suspicionLevel === "MEDIUM") {
+      reasons.push("Medium company suspicion level");
+      riskPoints += 2;
+    }
+
+    if (company.failedProjects > 0) {
+      reasons.push(`${company.failedProjects} previous failed project${company.failedProjects === 1 ? "" : "s"}`);
+      riskPoints += company.failedProjects >= 2 ? 3 : 2;
+    }
+
+    if (company.totalWins >= 5) {
+      reasons.push(`${company.totalWins} previous wins indicate repeated-winner risk`);
+      riskPoints += 3;
+    } else if (company.totalWins >= 3) {
+      reasons.push(`${company.totalWins} previous wins require pattern review`);
+      riskPoints += 2;
+    }
+  }
+
+  if (priceDelta !== null) {
+    if (priceDelta >= 25) {
+      reasons.push(`Bid is ${priceDelta}% above baseline`);
+      riskPoints += 4;
+    } else if (priceDelta >= 10) {
+      reasons.push(`Bid is ${priceDelta}% above baseline`);
+      riskPoints += 2;
+    } else if (priceDelta <= -30) {
+      reasons.push(`Bid is ${Math.abs(priceDelta)}% below baseline`);
+      riskPoints += 2;
+    }
+  }
+
+  if (reasons.length === 0) {
+    reasons.push("No major award-blocking signals detected");
+  }
+
+  return {
+    company,
+    priceDelta,
+    recommendation: riskPoints >= 5 ? "audit" : riskPoints >= 2 ? "review" : "safe",
+    reasons,
+  };
+}
+
 export default function AdminTenderDetails() {
   const { id } = useParams<{ id: string }>();
   const [tender, setTender] = useState<Tender | null>(null);
   const [participants, setParticipants] = useState<Application[]>([]);
+  const [companyRiskById, setCompanyRiskById] = useState<Record<string, CompanyDetail | null>>({});
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const loadData = async (tenderId: string) => {
     const [t, p] = await Promise.all([getTenderById(tenderId), getApplications({ tenderId })]);
     setTender(t ?? null);
     setParticipants(p);
+
+    const uniqueCompanyIds = [...new Set(p.map((participant) => participant.companyId).filter(Boolean))];
+    const companyEntries = await Promise.all(
+      uniqueCompanyIds.map(async (companyId) => {
+        try {
+          return [companyId, await getCompanyById(companyId)] as const;
+        } catch {
+          return [companyId, null] as const;
+        }
+      }),
+    );
+    setCompanyRiskById(Object.fromEntries(companyEntries));
   };
 
   useEffect(() => {
@@ -61,6 +168,7 @@ export default function AdminTenderDetails() {
         if (!cancelled) {
           setTender(null);
           setParticipants([]);
+          setCompanyRiskById({});
         }
       })
       .finally(() => {
@@ -79,11 +187,48 @@ export default function AdminTenderDetails() {
   );
   const winnerLocked = Boolean(selectedWinner) || Boolean(tender?.winnerCompanyId);
 
+  const participantRiskReviews = useMemo(() => {
+    if (!tender) return {};
+    return Object.fromEntries(
+      participants.map((participant) => [
+        participant.id,
+        buildParticipantRiskReview(participant, tender, companyRiskById[participant.companyId] ?? null),
+      ]),
+    ) as Record<string, ParticipantRiskReview>;
+  }, [companyRiskById, participants, tender]);
+
+  const winnerReviewData = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(participantRiskReviews).map(([applicationId, review]) => [
+          applicationId,
+          {
+            recommendation: review.recommendation,
+            priceDelta: review.priceDelta,
+            reasons: review.reasons,
+            suspicionScore: review.company?.suspicionScore,
+            suspicionLevel: review.company?.suspicionLevel,
+            failedProjects: review.company?.failedProjects,
+            totalWins: review.company?.totalWins,
+          },
+        ]),
+      ),
+    [participantRiskReviews],
+  );
+
   const handleFinalizeWinner = async (appId: string) => {
     const app = participants.find((p) => p.id === appId);
     if (!app) return;
     if (winnerLocked) {
       toast.error("Winner has already been finalized for this tender");
+      return;
+    }
+
+    const review = participantRiskReviews[appId];
+    if (review?.recommendation === "audit") {
+      toast.error("Audit required before awarding this company", {
+        description: review.reasons.slice(0, 2).join(" · "),
+      });
       return;
     }
 
@@ -151,6 +296,16 @@ export default function AdminTenderDetails() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {participants.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className="inline-flex items-center gap-2 rounded-md bg-primary-foreground/10 px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/15"
+              >
+                <FileText className="h-4 w-4" />
+                Generate report
+              </button>
+            )}
             {winnerLocked ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/10 px-3 py-1.5 text-sm text-primary-foreground/80">
                 <Lock className="h-4 w-4" />
@@ -170,7 +325,27 @@ export default function AdminTenderDetails() {
       </div>
 
       {/* Selected winner */}
-      <RecommendedWinnerCard winner={selectedWinner} />
+      <RecommendedWinnerCard
+        winner={selectedWinner}
+        participants={participants}
+        reviewsByApplicationId={winnerReviewData}
+      />
+
+      {!winnerLocked && participants.length > 0 && (
+        <section className="rounded-lg border border-risk-medium-border bg-risk-medium-bg/60 p-5">
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-card p-2">
+              <ShieldAlert className="h-4 w-4 text-risk-medium" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Before you award</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Review company risk, delivery history, repeated wins, and price anomaly signals before finalizing a winner.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
 
       {/* Meta */}
@@ -229,6 +404,9 @@ export default function AdminTenderDetails() {
                     Product
                   </th>
                   <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Award risk
+                  </th>
+                  <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Status
                   </th>
                   <th className="py-3 pl-3 pr-6 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -239,6 +417,9 @@ export default function AdminTenderDetails() {
               <tbody>
                 {participants.map((p) => {
                   const isSelectedWinner = selectedWinner?.id === p.id;
+                  const review = participantRiskReviews[p.id];
+                  const companyRisk = review?.company;
+                  const blocked = review?.recommendation === "audit";
                   return (
                     <tr
                       key={p.id}
@@ -262,8 +443,60 @@ export default function AdminTenderDetails() {
                       </td>
                       <td className="py-4 px-3 text-right font-mono tabular-nums text-sm">
                         {formatCurrency(p.proposedPrice)}
+                        {review?.priceDelta !== null && review?.priceDelta !== undefined && (
+                          <p
+                            className={cn(
+                              "mt-1 text-xs",
+                              review.priceDelta >= 10
+                                ? "text-risk-high"
+                                : review.priceDelta <= -30
+                                  ? "text-risk-medium"
+                                  : "text-muted-foreground",
+                            )}
+                          >
+                            {review.priceDelta > 0 ? "+" : ""}
+                            {review.priceDelta}% vs baseline
+                          </p>
+                        )}
                       </td>
                       <td className="py-4 px-3 text-sm text-foreground/80">{p.productName}</td>
+                      <td className="py-4 px-3 min-w-[280px]">
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {companyRisk ? (
+                              <RiskBadge
+                                score={companyRisk.suspicionScore}
+                                level={companyRisk.suspicionLevel}
+                                size="sm"
+                              />
+                            ) : (
+                              <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                Risk unavailable
+                              </span>
+                            )}
+                            {review && (
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
+                                  recommendationStyles[review.recommendation],
+                                )}
+                              >
+                                {review.recommendation === "safe" ? (
+                                  <CheckCircle2 className="h-3 w-3" />
+                                ) : (
+                                  <AlertTriangle className="h-3 w-3" />
+                                )}
+                                {recommendationLabels[review.recommendation]}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs leading-5 text-muted-foreground">
+                            {review?.reasons.slice(0, 2).map((reason) => (
+                              <p key={reason}>{reason}</p>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
                       <td className="py-4 px-3">
                         <span
                           className={cn(
@@ -281,13 +514,25 @@ export default function AdminTenderDetails() {
                       <td className="py-4 pl-3 pr-6 text-right">
                         {winnerLocked ? (
                           <span className="text-xs text-muted-foreground">Locked</span>
+                        ) : blocked ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              toast.error("Do not award without audit", {
+                                description: review.reasons.slice(0, 2).join(" · "),
+                              });
+                            }}
+                            className="rounded-md border border-risk-high-border bg-risk-high-bg px-3 py-1.5 text-xs font-medium text-risk-high"
+                          >
+                            Audit required
+                          </button>
                         ) : (
                           <button
                             onClick={() => void handleFinalizeWinner(p.id)}
                             disabled={updatingId !== null}
                             className="rounded-md border border-risk-low-border bg-risk-low-bg px-3 py-1.5 text-xs font-medium text-risk-low transition-all hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
                           >
-                            Select winner
+                            Finalize as winner
                           </button>
                         )}
                       </td>
@@ -299,6 +544,15 @@ export default function AdminTenderDetails() {
           </div>
         )}
       </section>
+
+      <AuditReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        tender={tender}
+        participants={participants}
+        selectedWinner={selectedWinner}
+        reviewsByApplicationId={winnerReviewData}
+      />
     </main>
   );
 }

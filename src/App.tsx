@@ -12,10 +12,12 @@ import CompanyDashboard from "./pages/company/CompanyDashboard";
 import MyApplications from "./pages/company/MyApplications";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminTendersPage from "./pages/admin/AdminTendersPage";
+import AdminCompaniesPage from "./pages/admin/AdminCompaniesPage";
 import AdminTenderDetails from "./pages/admin/AdminTenderDetails";
 import AdminCreateTender from "./pages/admin/AdminCreateTender";
 import AdminEditTender from "./pages/admin/AdminEditTender";
 import CompanyProfilePage from "./pages/CompanyProfilePage";
+import PublicTransparencyPage from "./pages/PublicTransparencyPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +38,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<RootRedirect />} />
+            <Route path="/public" element={<PublicTransparencyPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<RegisterCompany />} />
 
@@ -52,6 +55,7 @@ const App = () => (
                 <Route element={<ProtectedRoute role="admin" />}>
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/admin/tenders" element={<AdminTendersPage />} />
+                  <Route path="/admin/companies" element={<AdminCompaniesPage />} />
                   <Route path="/admin/tenders/create" element={<AdminCreateTender />} />
                   <Route path="/admin/tenders/:id" element={<AdminTenderDetails />} />
                   <Route path="/admin/tenders/:id/edit" element={<AdminEditTender />} />

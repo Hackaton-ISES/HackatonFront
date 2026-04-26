@@ -13,6 +13,7 @@ export function Navbar() {
   const adminLinks = [
     { to: "/admin", label: "Dashboard" },
     { to: "/admin/tenders", label: "Tenders" },
+    { to: "/admin/companies", label: "Companies" },
   ];
   const companyLinks = [
     { to: "/company", label: "Tenders" },
@@ -26,7 +27,7 @@ export function Navbar() {
   };
 
   return (
-    <header className="bg-gradient-header text-primary-foreground border-b border-border/10">
+    <header className="bg-gradient-header text-primary-foreground border-b border-border/10 page-header-reveal">
       <div className="container flex h-16 items-center gap-6">
         <Link
           to={user.role === "admin" ? "/admin" : "/company"}

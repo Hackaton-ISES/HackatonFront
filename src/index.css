@@ -71,8 +71,9 @@
     --shadow-lg: 0 20px 40px -12px hsl(222 47% 11% / 0.18);
 
     /* Transitions */
-    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    --transition-smooth: 420ms cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-emphasis: 620ms cubic-bezier(0.16, 1, 0.3, 1);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -123,9 +124,131 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
+  ::selection {
+    background: hsl(var(--primary) / 0.16);
+  }
+
   .font-mono {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
+}
+
+@layer components {
+  main {
+    animation: pageReveal var(--transition-emphasis) both;
+    transform-origin: top center;
+  }
+
+  main > * {
+    animation: contentReveal var(--transition-emphasis) both;
+  }
+
+  main > *:nth-child(1) { animation-delay: 40ms; }
+  main > *:nth-child(2) { animation-delay: 90ms; }
+  main > *:nth-child(3) { animation-delay: 140ms; }
+  main > *:nth-child(4) { animation-delay: 190ms; }
+  main > *:nth-child(5) { animation-delay: 240ms; }
+  main > *:nth-child(6) { animation-delay: 290ms; }
+
+  main section,
+  main article,
+  main table,
+  main form,
+  main [role="alert"] {
+    will-change: transform, opacity;
+  }
+
+  main .bg-card.border {
+    transition:
+      transform var(--transition-base),
+      box-shadow var(--transition-base),
+      border-color var(--transition-base),
+      background-color var(--transition-base);
+  }
+
+  main .bg-card.border:hover {
+    border-color: hsl(var(--primary) / 0.14);
+    box-shadow: var(--shadow-sm);
+  }
+
+  main tbody tr {
+    animation: rowReveal 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  main tbody tr:nth-child(1) { animation-delay: 40ms; }
+  main tbody tr:nth-child(2) { animation-delay: 70ms; }
+  main tbody tr:nth-child(3) { animation-delay: 100ms; }
+  main tbody tr:nth-child(4) { animation-delay: 130ms; }
+  main tbody tr:nth-child(5) { animation-delay: 160ms; }
+  main tbody tr:nth-child(6) { animation-delay: 190ms; }
+  main tbody tr:nth-child(7) { animation-delay: 220ms; }
+  main tbody tr:nth-child(8) { animation-delay: 250ms; }
+  main tbody tr:nth-child(9) { animation-delay: 280ms; }
+  main tbody tr:nth-child(10) { animation-delay: 310ms; }
+
+  .motion-surface {
+    position: relative;
+    isolation: isolate;
+    transition:
+      transform var(--transition-base),
+      box-shadow var(--transition-base),
+      border-color var(--transition-base),
+      background-color var(--transition-base);
+  }
+
+  .motion-surface::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    opacity: 0;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.08), transparent 42%);
+    transition: opacity var(--transition-base);
+    z-index: -1;
+  }
+
+  .motion-surface:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: hsl(var(--primary) / 0.18);
+  }
+
+  .motion-surface:hover::after {
+    opacity: 1;
+  }
+
+  .page-header-reveal {
+    animation: headerReveal 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .stagger-children > * {
+    animation: contentReveal var(--transition-emphasis) both;
+  }
+
+  .stagger-children > *:nth-child(1) { animation-delay: 60ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 110ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 160ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 210ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 260ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 310ms; }
+  .stagger-children > *:nth-child(7) { animation-delay: 360ms; }
+  .stagger-children > *:nth-child(8) { animation-delay: 410ms; }
+
+  .table-row-reveal tbody tr {
+    animation: rowReveal 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .table-row-reveal tbody tr:nth-child(1) { animation-delay: 40ms; }
+  .table-row-reveal tbody tr:nth-child(2) { animation-delay: 70ms; }
+  .table-row-reveal tbody tr:nth-child(3) { animation-delay: 100ms; }
+  .table-row-reveal tbody tr:nth-child(4) { animation-delay: 130ms; }
+  .table-row-reveal tbody tr:nth-child(5) { animation-delay: 160ms; }
+  .table-row-reveal tbody tr:nth-child(6) { animation-delay: 190ms; }
+  .table-row-reveal tbody tr:nth-child(7) { animation-delay: 220ms; }
+  .table-row-reveal tbody tr:nth-child(8) { animation-delay: 250ms; }
+  .table-row-reveal tbody tr:nth-child(9) { animation-delay: 280ms; }
+  .table-row-reveal tbody tr:nth-child(10) { animation-delay: 310ms; }
 }
 
 @layer utilities {
@@ -134,11 +257,19 @@
   }
 
   .animate-fade-in {
-    animation: fadeIn var(--transition-smooth) ease-out;
+    animation: fadeIn var(--transition-smooth) both;
   }
 
   .animate-slide-up {
-    animation: slideUp 400ms cubic-bezier(0.4, 0, 0.2, 1);
+    animation: contentReveal var(--transition-emphasis) both;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .animate-soft-pulse {
+    animation: softPulse 1800ms ease-in-out infinite;
   }
 
   @keyframes fadeIn {
@@ -146,9 +277,45 @@
     to { opacity: 1; }
   }
 
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(8px); }
+  @keyframes pageReveal {
+    from { opacity: 0; transform: translateY(10px) scale(0.992); filter: blur(4px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+
+  @keyframes contentReveal {
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes headerReveal {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes rowReveal {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes softPulse {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.06); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
   }
 }
 
